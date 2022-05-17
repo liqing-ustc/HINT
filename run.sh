@@ -1,10 +1,12 @@
 for MODEL in GRU LSTM; do
-for ENC_LAYERS in 1 2 3; do
-for DEC_LAYERS in 1 2 3; do
+for LAYERS in 1 2 3; do
+for HID_DIM in 128 256 512; do
+for DROPOUT in 0.1 0.5; do
 python train.py --seq2seq=${MODEL} --perception \
-	--enc_layers=$ENC_LAYERS --dec_layers=$DEC_LAYERS \
-	--epochs=10 --epochs_eval=1 \
-	>outputs/${MODEL}_enc${ENC_LAYERS}_dec${DEC_LAYERS}.log
+	--enc_layers=$LAYERS --dec_layers=$LAYERS \
+	--epochs=1 --epochs_eval=1 --dropout=$DROPOUT \
+	>outputs/${MODEL}_layers${LAYERS}_hid${HID_DIM}_drop${DROPOUT}.log
+done
 done
 done
 done

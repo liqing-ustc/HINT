@@ -46,6 +46,7 @@ def parse_args():
     parser.add_argument('--semantics', action='store_true', help='whether to provide perfect semantics, i.e., no need to learn')
     parser.add_argument('--curriculum', action='store_true', help='whether to use the pre-defined curriculum')
 
+    parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs for training')
     parser.add_argument('--epochs_eval', type=int, default=10, help='how many epochs per evaluation')
     args = parser.parse_args()
@@ -154,7 +155,7 @@ def evaluate(model, dataloader):
 
 def train(model, args, st_epoch=0):
     best_acc = 0.0
-    batch_size = 64
+    batch_size = args.batch_size
     train_dataloader = torch.utils.data.DataLoader(args.train_set, batch_size=batch_size,
                          shuffle=True, num_workers=4, collate_fn=HINT_collate)
     eval_dataloader = torch.utils.data.DataLoader(args.val_set, batch_size=32,
