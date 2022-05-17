@@ -5,6 +5,7 @@ import framework
 from layers import Transformer, TiedEmbedding
 from typing import Callable, Optional
 import math
+import random
 
 
 class TransformerEncDecModel(torch.nn.Module):
@@ -140,7 +141,7 @@ class TransformerEncDecModel(torch.nn.Module):
         return src
 
     def forward(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor,
-                target_len: torch.Tensor, teacher_forcing: bool, max_len: Optional[int] = None):
+                target_len: torch.Tensor, teacher_forcing_ratio: float, max_len: Optional[int] = None):
         '''
         Run transformer encoder-decoder on some input/output pair
 
@@ -148,14 +149,14 @@ class TransformerEncDecModel(torch.nn.Module):
         :param src_len: length of source sequences. Shape: [N], N is the batch size
         :param target: target tensor. Shape: [N, T], where T is the in sequence length, N is the batch size
         :param target_len: length of target sequences. Shape: [N], N is the batch size
-        :param teacher_forcing: use teacher forcing or greedy decoding
+        :param teacher_forcing_ratio: use teacher forcing or greedy decoding
         :param max_len: overwrite autodetected max length. Useful for parallel execution
         :return: prediction of the target tensor. Shape [N, T, C_out]
         '''
 
         src = self.pos_embed(self.input_embed(src), 0, 0)
-
-        if teacher_forcing:
+        use_teacher_forcing = True if self.training and random.random() < teacher_forcing_ratio else False
+        if use_teacher_forcing:
             return self.run_teacher_forcing(src, src_len, target, target_len)
         else:
             return self.run_greedy(src, src_len, max_len or target.shape[1])
