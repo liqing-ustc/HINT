@@ -1,0 +1,11 @@
+data/symbol_images/
+data/symbol_images
+data/*.json
+*__pycache__*
+.vscode/
+.ipynb_checkpoints/
+compressionMessages/
+outputs/
+log.txt
+*.p
+tmp/
