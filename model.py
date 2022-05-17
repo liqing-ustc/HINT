@@ -11,9 +11,8 @@ import time
 from tqdm import tqdm
 
 import sys
-sys.path.append("../ANS/")
-from perception import resnet_scan
-from baseline_utils import SYMBOLS, INP_VOCAB, RES_VOCAB, DEVICE, START, NULL, END, RES_MAX_LEN
+import resnet_scan
+from utils import SYMBOLS, INP_VOCAB, RES_VOCAB, DEVICE, START, NULL, END, RES_MAX_LEN
 from rnn import RNNModel
 
 class EmbeddingIn(nn.Module):

@@ -1,4 +1,3 @@
-from baseline_utils import *
 import time
 from tqdm import tqdm
 from collections import Counter
@@ -23,7 +22,7 @@ import argparse
 import sys
 from torch.optim import Adam
 from optimization import AdamW, WarmupLinearSchedule, ConstantLRSchedule
-from baseline_utils import SYMBOLS, INP_VOCAB, RES_VOCAB, DEVICE, NULL, END, RES_MAX_LEN
+from utils import *
 
 def parse_args():
     parser = argparse.ArgumentParser('Give Me A HINT')
