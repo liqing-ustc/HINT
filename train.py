@@ -77,7 +77,7 @@ def evaluate(model, dataloader):
             img = sample['img_seq']
             src = torch.tensor([x for s in sample['sentence'] for x in s])
             res = sample['res']
-            trg = torch.tensor(res2seq(res.numpy()))
+            tgt = torch.tensor(res2seq(res.numpy()))
             expr = sample['expr']
             dep = sample['head']
             src_len = sample['len']
@@ -85,9 +85,9 @@ def evaluate(model, dataloader):
 
             img = img.to(DEVICE)
             src = src.to(DEVICE)
-            trg = trg.to(DEVICE)
+            tgt = tgt.to(DEVICE)
 
-            output = model(img, src, trg, src_len, tgt_len)
+            output = model(img, src, tgt[:, :-1], src_len, tgt_len)
             pred = torch.argmax(output, -1).detach().cpu().numpy()
             res_pred = [seq2res(x) for x in pred]
             res_pred_all.append(res_pred)
@@ -187,10 +187,10 @@ def train(model, args, st_epoch=0):
         train_dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
                             shuffle=True, num_workers=4, collate_fn=HINT_collate)
     
-    ###########evaluate init model###########
-    # perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader)
-    # print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
-    #########################################
+    ##########evaluate init model###########
+    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader)
+    print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
+    ########################################
 
     for epoch in range(st_epoch, args.epochs):
         if args.curriculum and epoch in curriculum_strategy:
@@ -210,19 +210,19 @@ def train(model, args, st_epoch=0):
             img = sample['img_seq']
             src = torch.tensor([x for s in sample['sentence'] for x in s])
             res = sample['res']
-            trg = torch.tensor(res2seq(res.numpy()))
+            tgt = torch.tensor(res2seq(res.numpy()))
             src_len = sample['len']
             tgt_len = [len(str(x)) for x in res.numpy()]
 
             img = img.to(DEVICE)
             src = src.to(DEVICE)
-            trg = trg.to(DEVICE)
-            output = model(img, src, trg[:, :-1], src_len, tgt_len)
-            loss = criterion(output.contiguous().view(-1, output.shape[-1]), trg[:, 1:].contiguous().view(-1))
+            tgt = tgt.to(DEVICE)
+            output = model(img, src, tgt[:, :-1], src_len, tgt_len)
+            loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
 
             optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             lr_scheduler.step()
             train_loss.append(loss.cpu().item())

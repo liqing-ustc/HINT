@@ -21,9 +21,14 @@ def res2seq(res, pad=True):
     return seq
 
 def seq2res(seq):
-    seq = [RES_VOCAB[x] for x in seq]
-    seq = [x for x in seq if x in DIGITS]
+    res = []
+    for x in seq:
+        x = RES_VOCAB[x]
+        if x in [START, NULL, END]:
+            break
+        res.append(x)
+
     if reverse:
-        seq = seq[::-1]
-    res = int(''.join(seq)) if len(seq) > 0 else -1
+        res = res[::-1]
+    res = int(''.join(res)) if len(res) > 0 else -1
     return res
