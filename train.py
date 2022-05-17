@@ -2,12 +2,6 @@ import time
 from tqdm import tqdm
 from collections import Counter
 
-from sklearn.metrics import classification_report, confusion_matrix
-import pandas as pd
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
-
 from dataset import HINT, HINT_collate
 from model import make_model
 
@@ -50,16 +44,6 @@ def parse_args():
     parser.add_argument('--epochs_eval', type=int, default=10, help='how many epochs per evaluation')
     args = parser.parse_args()
     return args
-
-from nltk.tree import Tree
-def draw_parse(sentence, head):
-    def build_tree(pos):
-        children = [i for i, h in enumerate(head) if h == pos]
-        return Tree(sentence[pos], [build_tree(x) for x in children])
-    
-    root = head.index(-1)
-    tree = build_tree(root)
-    return tree
 
 def evaluate(model, dataloader):
     model.eval() 
