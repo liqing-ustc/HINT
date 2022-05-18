@@ -15,7 +15,7 @@ parameters:
   seq2seq:
     value: transformer
   lr:
-    values: [0.1, 0.01, 0.001, 0.0001]
+    value: 0.001
   transformer:
     value: relative
   nhead:
@@ -24,3 +24,5 @@ parameters:
     value: 1
   hid_dim:
     value: 128
+  grad_clip:
+    values: [0.1, 1, 5]
