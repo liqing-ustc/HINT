@@ -12,6 +12,7 @@ import numpy as np
 import random
 torch.multiprocessing.set_sharing_strategy('file_system')
 
+import wandb
 import argparse
 import sys
 from torch.optim import Adam
@@ -28,24 +29,25 @@ def parse_args():
 
     parser.add_argument('--seq2seq', type=str, default='GRU', help='the type of seq2seq: GRU, LSTM, TRAN for Transformer, ON for Ordered Neuron LSTM, OM for Ordered Memory.')
     parser.add_argument('--nhead', type=int, default=1, help="number of attention heads in the Transformer model")
-    parser.add_argument('--enc_layers', type=int, default=1, help="number of layers in encoder")
-    parser.add_argument('--dec_layers', type=int, default=1, help="number of layers in decoder")
+    parser.add_argument('--layers', type=int, default=1, help="number of layers for both encoder and decoder")
+    parser.add_argument('--enc_layers', type=int, default=0, help="number of layers in encoder")
+    parser.add_argument('--dec_layers', type=int, default=0, help="number of layers in decoder")
     parser.add_argument('--emb_dim', type=int, default=128, help="embedding dim")
     parser.add_argument('--hid_dim', type=int, default=128, help="hidden dim")
     parser.add_argument('--dropout', type=float, default=0.5, help="dropout ratio")
 
-    parser.add_argument('--perception', action='store_true', help='whether to provide perfect perception, i.e., no need to learn')
-    parser.add_argument('--syntax', action='store_true', help='whether to provide perfect syntax, i.e., no need to learn')
-    parser.add_argument('--semantics', action='store_true', help='whether to provide perfect semantics, i.e., no need to learn')
-    parser.add_argument('--curriculum', action='store_true', help='whether to use the pre-defined curriculum')
+    parser.add_argument('--input', default='image', choices=['image', 'symbol'], help='whether to provide perfect perception, i.e., no need to learn')
+    parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
-    parser.add_argument('--epochs', type=int, default=100, help='number of epochs for training')
-    parser.add_argument('--epochs_eval', type=int, default=10, help='how many epochs per evaluation')
+    parser.add_argument('--epochs', type=int, default=10, help='number of epochs for training')
+    parser.add_argument('--epochs_eval', type=int, default=1, help='how many epochs per evaluation')
     args = parser.parse_args()
+    args.enc_layers = args.enc_layers or args.layers
+    args.dec_layers = args.dec_layers or args.layers
     return args
 
-def evaluate(model, dataloader):
+def evaluate(model, dataloader, log_prefix='val'):
     model.eval() 
     res_all = []
     res_pred_all = []
@@ -55,6 +57,8 @@ def evaluate(model, dataloader):
 
     dep_all = []
     dep_pred_all = []
+
+    metrics = {}
 
     with torch.no_grad():
         for sample in tqdm(dataloader):
@@ -85,40 +89,46 @@ def evaluate(model, dataloader):
     res_pred_all = np.concatenate(res_pred_all, axis=0)
     res_all = np.concatenate(res_all, axis=0)
     result_acc = (res_pred_all == res_all).mean()
+    metrics['result_acc/avg'] = result_acc
 
-    print("result accuracy by length:")
+    # print("result accuracy by length:")
     for k in sorted(dataloader.dataset.len2ids.keys()):
         ids = dataloader.dataset.len2ids[k]
         res = res_all[ids]
         res_pred = res_pred_all[ids]
         res_acc = (res == res_pred).mean()
-        print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
-    
-    print("result accuracy by symbol:")
+        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        metrics[f'result_acc/length/{k}'] = res_acc
+
+    # print("result accuracy by symbol:")
     for k in sorted(dataloader.dataset.sym2ids.keys()):
         ids = dataloader.dataset.sym2ids[k]
         res = res_all[ids]
         res_pred = res_pred_all[ids]
         res_acc = (res == res_pred).mean()
-        print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        k = 'div' if k == '/' else k
+        metrics[f'result_acc/symbol/{k}'] = res_acc
 
-    print("result accuracy by digit:")
+    # print("result accuracy by digit:")
     for k in sorted(dataloader.dataset.digit2ids.keys()):
         ids = dataloader.dataset.digit2ids[k]
         res = res_all[ids]
         res_pred = res_pred_all[ids]
         res_acc = (res == res_pred).mean()
-        print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        metrics[f'result_acc/digit/{k}'] = res_acc
 
-    print("result accuracy by result:")
+    # print("result accuracy by result:")
     for k in sorted(dataloader.dataset.res2ids.keys())[:10]:
         ids = dataloader.dataset.res2ids[k]
         res = res_all[ids]
         res_pred = res_pred_all[ids]
         res_acc = (res == res_pred).mean()
-        print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        metrics[f'result_acc/result/{k}'] = res_acc
 
-    print("result accuracy by generalization:")
+    # print("result accuracy by generalization:")
     for k in sorted(dataloader.dataset.cond2ids.keys()):
         ids = dataloader.dataset.cond2ids[k]
         res = res_all[ids]
@@ -127,12 +137,15 @@ def evaluate(model, dataloader):
             res_acc = 0.
         else:
             res_acc = (res == res_pred).mean()
-        print(k, "(%.2f%%)"%(100*len(ids)/len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        # print(k, "(%.2f%%)"%(100*len(ids)/len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
+        metrics[f'result_acc/generalization/{k}'] = res_acc
+
+    wandb.log({f'{log_prefix}/{k}': v for k, v in metrics.items()})
     
-    print("error cases:")
-    errors = np.arange(len(res_all))[res_all != res_pred_all]
-    for i in errors[:10]:
-        print(expr_all[i], dep_all[i], res_all[i], res_pred_all[i])
+    # print("error cases:")
+    # errors = np.arange(len(res_all))[res_all != res_pred_all]
+    # for i in errors[:10]:
+    #     print(expr_all[i], dep_all[i], res_all[i], res_pred_all[i])
 
     return 0., 0., result_acc
 
@@ -152,7 +165,7 @@ def train(model, args, st_epoch=0):
     criterion = nn.CrossEntropyLoss(ignore_index=RES_VOCAB.index(NULL))
     
     max_len = float("inf")
-    if args.curriculum:
+    if args.curriculum == 'manual':
         curriculum_strategy = dict([
             # (0, 7)
             (0, 1),
@@ -177,7 +190,7 @@ def train(model, args, st_epoch=0):
     ########################################
 
     for epoch in range(st_epoch, args.epochs):
-        if args.curriculum and epoch in curriculum_strategy:
+        if args.curriculum == 'manual' and epoch in curriculum_strategy:
             max_len = curriculum_strategy[epoch]
             train_set.filter_by_len(max_len=max_len)
             train_dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
@@ -215,6 +228,8 @@ def train(model, args, st_epoch=0):
             res_pred = [seq2res(x) for x in pred]
             acc = np.mean(np.array(res_pred) == res.numpy())
             train_acc.append(acc)
+
+            wandb.log({'train/loss': loss.cpu().item(), 'train/result_acc': acc})
         train_acc = np.mean(train_acc)
         train_loss = np.mean(train_loss)
         print("Train acc: %.2f, loss: %.3f "%(train_acc * 100, train_loss))
@@ -222,6 +237,7 @@ def train(model, args, st_epoch=0):
         if ((epoch+1) % args.epochs_eval == 0) or (epoch+1 == args.epochs):
             perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader)
             print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
+            wandb.log({'val/result_acc': result_acc})
             if result_acc > best_acc:
                 best_acc = result_acc
 
@@ -237,7 +253,7 @@ def train(model, args, st_epoch=0):
     print('Evaluate on test set...')
     eval_dataloader = torch.utils.data.DataLoader(args.test_set, batch_size=64,
                          shuffle=False, num_workers=4, collate_fn=HINT_collate)
-    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader)
+    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, log_prefix='test')
     print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('test', 100*perception_acc, 100*head_acc, 100*result_acc))
     return
 
@@ -246,6 +262,7 @@ def train(model, args, st_epoch=0):
 if __name__ == "__main__":
     args = parse_args()
     sys.argv = sys.argv[:1]
+    wandb.init(project='HINT', config=vars(args))
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -263,7 +280,7 @@ if __name__ == "__main__":
     model = make_model(args)
     model.to(DEVICE)
 
-    if args.perception_pretrain and not args.perception:
+    if args.perception_pretrain and args.input == 'image':
         model.embedding_in.image_encoder.load_state_dict(torch.load(args.perception_pretrain))
 
     st_epoch = 0

@@ -19,7 +19,7 @@ class EmbeddingIn(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.image_input = not config.perception
+        self.image_input = config.input == 'image'
 
         if self.image_input:
             self.image_encoder = resnet_scan.make_model(n_class=config.in_vocab_size - 3)
@@ -78,7 +78,7 @@ class NeuralArithmetic(nn.Module):
             self.seq2seq = transformer.create_model(config)
     
     def forward(self, img, src, tgt, src_len, tgt_len):
-        src = self.embedding_in(src if self.config.perception else img, src_len)
+        src = self.embedding_in(img if self.embedding_in.image_input else src, src_len)
         output = self.seq2seq(src, src_len, tgt, tgt_len)
         return output
 
