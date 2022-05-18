@@ -65,10 +65,11 @@ class NeuralArithmetic(nn.Module):
         config.decoder_eos = RES_VOCAB.index(END)
 
         config.embedding_init = 'pytorch'
-        if 'scaledinit' in config.seq2seq:
-            config.embedding_init = 'kaiming'
-        elif 'opennmt' in config.seq2seq:
-            config.embedding_init = 'xavier'
+        if config.seq2seq == 'transformer':
+            if 'scaledinit' in config.transformer:
+                config.embedding_init = 'kaiming'
+            elif 'opennmt' in config.transformer:
+                config.embedding_init = 'xavier'
 
         self.embedding_in = EmbeddingIn(config)
         if config.seq2seq in ['GRU', 'LSTM', 'ON', 'OM']:

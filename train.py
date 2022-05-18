@@ -21,13 +21,19 @@ from utils import *
 
 def parse_args():
     parser = argparse.ArgumentParser('Give Me A HINT')
+    parser.add_argument('--wandb', type=str, default='HINT', help='the project name for wandb.')
     parser.add_argument('--resume', type=str, default=None, help='Resumes training from checkpoint.')
     parser.add_argument('--perception-pretrain', type=str, help='initialize the perception from pretrained models.',
                         default='data/perception-pretrain/model.pth.tar_78.2_match')
     parser.add_argument('--output-dir', type=str, default='outputs/', help='output directory for storing checkpoints')
     parser.add_argument('--seed', type=int, default=0, help="Random seed.")
 
-    parser.add_argument('--seq2seq', type=str, default='GRU', help='the type of seq2seq: GRU, LSTM, TRAN for Transformer, ON for Ordered Neuron LSTM, OM for Ordered Memory.')
+    parser.add_argument('--seq2seq', type=str, default='GRU', 
+            choices=['GRU', 'LSTM', 'ON', 'OM', 'transformer'],
+            help='the type of seq2seq: GRU, LSTM, transformer, ON for Ordered Neuron LSTM, OM for Ordered Memory.')
+    parser.add_argument('--transformer', type=str, default='opennmt', 
+            choices=['opennmt', 'relative', 'relative_universal'],
+            help='the variant of transformer, only effective when seq2seq=TRAN')
     parser.add_argument('--nhead', type=int, default=1, help="number of attention heads in the Transformer model")
     parser.add_argument('--layers', type=int, default=1, help="number of layers for both encoder and decoder")
     parser.add_argument('--enc_layers', type=int, default=0, help="number of layers in encoder")
@@ -40,6 +46,7 @@ def parse_args():
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
+    parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs for training')
     parser.add_argument('--epochs_eval', type=int, default=1, help='how many epochs per evaluation')
     args = parser.parse_args()
@@ -157,10 +164,10 @@ def train(model, args, st_epoch=0):
     eval_dataloader = torch.utils.data.DataLoader(args.val_set, batch_size=32,
                          shuffle=False, num_workers=4, collate_fn=HINT_collate)
 
-    # optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.02)
+    # optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=0.02)
     # lr_scheduler = WarmupLinearSchedule(optimizer, warmup_steps=10 * len(train_dataloader), t_total=args.epochs*len(train_dataloader),
     #                  last_epoch=st_epoch*len(train_dataloader)-1)
-    optimizer = Adam(model.parameters(), lr=1e-3)
+    optimizer = Adam(model.parameters(), lr=args.lr)
     lr_scheduler = ConstantLRSchedule(optimizer)
     criterion = nn.CrossEntropyLoss(ignore_index=RES_VOCAB.index(NULL))
     
@@ -261,7 +268,7 @@ def train(model, args, st_epoch=0):
 if __name__ == "__main__":
     args = parse_args()
     sys.argv = sys.argv[:1]
-    wandb.init(project='HINT', config=vars(args))
+    wandb.init(project=args.wandb, config=vars(args))
 
     random.seed(args.seed)
     np.random.seed(args.seed)

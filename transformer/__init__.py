@@ -18,13 +18,16 @@ def create_model(config) -> torch.nn.Module:
 		"relative_universal": (UniversalRelativeTransformer, rel_args)
 	}
 
-	constructor, args = trafos[config.seq2seq]
+	constructor, args = trafos[config.transformer]
 
 	return TransformerEncDecModel(config.in_vocab_size, config.out_vocab_size, config.hid_dim,
-									nhead=config.nhead,
 									num_encoder_layers=config.enc_layers,
 									num_decoder_layers=config.dec_layers,
 									transformer=constructor,
 									decoder_sos=config.decoder_sos,
 									decoder_eos=config.decoder_eos,
+									in_embedding_size=config.emb_dim,
+									out_embedding_size=config.emb_dim,
+									nhead=config.nhead,
+									dropout=config.dropout,
 									**args)

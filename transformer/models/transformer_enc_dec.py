@@ -141,7 +141,7 @@ class TransformerEncDecModel(torch.nn.Module):
         return src
 
     def forward(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor,
-                target_len: torch.Tensor, teacher_forcing_ratio: float, max_len: Optional[int] = None):
+                target_len: torch.Tensor, teacher_forcing_ratio: float = 1.0, max_len: Optional[int] = None):
         '''
         Run transformer encoder-decoder on some input/output pair
 
@@ -155,6 +155,7 @@ class TransformerEncDecModel(torch.nn.Module):
         '''
 
         src = self.pos_embed(self.input_embed(src), 0, 0)
+        src_len = src_len.to(src.device)
         use_teacher_forcing = True if self.training and random.random() < teacher_forcing_ratio else False
         if use_teacher_forcing:
             return self.run_teacher_forcing(src, src_len, target, target_len)
