@@ -5,7 +5,7 @@ metric:
   goal: maximize
 parameters:
   epochs:
-    value: 100
+    value: 10
   epochs_eval:
     value: 1
   dropout:
