@@ -74,10 +74,8 @@ class NeuralArithmetic(nn.Module):
         if config.seq2seq in ['GRU', 'LSTM', 'ON', 'OM']:
             self.seq2seq = RNNModel(config)
         else:
-            # import transformer
-            # self.seq2seq = transformer.create_model(config)
-            from transformer_qing import TransformerModel
-            self.seq2seq = TransformerModel(config)
+            import transformer
+            self.seq2seq = transformer.create_model(config)
     
     def forward(self, src, tgt, src_len, tgt_len):
         src = self.embedding_in(src, src_len)

@@ -5,7 +5,7 @@ metric:
   goal: maximize
 parameters:
   epochs:
-    value: 1
+    value: 100
   epochs_eval:
     value: 1
   dropout:
@@ -15,7 +15,7 @@ parameters:
   seq2seq:
     value: transformer
   lr:
-    value: 0.0001
+    value: 0.001
   transformer:
     values: [opennmt, relative, relative_universal]
   nhead:
