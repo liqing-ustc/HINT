@@ -47,6 +47,7 @@ def parse_args():
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+    parser.add_argument('--grad_clip', type=float, default=None)
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs for training')
     parser.add_argument('--epochs_eval', type=int, default=1, help='how many epochs per evaluation')
     args = parser.parse_args()
@@ -226,7 +227,8 @@ def train(model, args, st_epoch=0):
 
             optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+            if args.grad_clip:
+                nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             lr_scheduler.step()
             train_loss.append(loss.cpu().item())

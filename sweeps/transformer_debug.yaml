@@ -1,0 +1,26 @@
+program: train.py
+method: grid
+metric:
+  name: test/result_acc/avg
+  goal: maximize
+parameters:
+  epochs:
+    value: 1
+  epochs_eval:
+    value: 1
+  dropout:
+    value: 0.1
+  input:
+    value: symbol
+  seq2seq:
+    value: transformer
+  lr:
+    values: [0.1, 0.01, 0.001, 0.0001]
+  transformer:
+    value: relative
+  nhead:
+    value: 4
+  layers:
+    value: 1
+  hid_dim:
+    value: 128
