@@ -24,5 +24,3 @@ parameters:
     value: 1
   hid_dim:
     value: 128
-  pos_emb_type:
-    values: [sin, learn]
