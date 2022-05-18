@@ -57,7 +57,7 @@ def parse_args():
     args.dec_layers = args.dec_layers or args.layers
     return args
 
-def evaluate(model, dataloader, log_prefix='val'):
+def evaluate(model, dataloader, args, log_prefix='val'):
     model.eval() 
     res_all = []
     res_pred_all = []
@@ -72,8 +72,10 @@ def evaluate(model, dataloader, log_prefix='val'):
 
     with torch.no_grad():
         for sample in tqdm(dataloader):
-            img = sample['img_seq']
-            src = torch.tensor([x for s in sample['sentence'] for x in s])
+            if args.input == 'image':
+                src = sample['img_seq']
+            elif args.input == 'symbol':
+                src = torch.tensor([x for s in sample['sentence'] for x in s])
             res = sample['res']
             tgt = torch.tensor(res2seq(res.numpy()))
             expr = sample['expr']
@@ -81,11 +83,10 @@ def evaluate(model, dataloader, log_prefix='val'):
             src_len = sample['len']
             tgt_len = [len(str(x)) for x in res.numpy()]
 
-            img = img.to(DEVICE)
             src = src.to(DEVICE)
             tgt = tgt.to(DEVICE)
 
-            output = model(img, src, tgt[:, :-1], src_len, tgt_len)
+            output = model(src, tgt[:, :-1], src_len, tgt_len)
             pred = torch.argmax(output, -1).detach().cpu().numpy()
             res_pred = [seq2res(x) for x in pred]
             res_pred_all.append(res_pred)
@@ -196,7 +197,7 @@ def train(model, args, st_epoch=0):
                             shuffle=True, num_workers=4, collate_fn=HINT_collate)
     
     ##########evaluate init model###########
-    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader)
+    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
     print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
     ########################################
 
@@ -215,17 +216,19 @@ def train(model, args, st_epoch=0):
         train_acc = []
         train_loss = []
         for sample in tqdm(train_dataloader):
-            img = sample['img_seq']
-            src = torch.tensor([x for s in sample['sentence'] for x in s])
+            if args.input == 'image':
+                src = sample['img_seq']
+            elif args.input == 'symbol':
+                src = torch.tensor([x for s in sample['sentence'] for x in s])
+
             res = sample['res']
             tgt = torch.tensor(res2seq(res.numpy()))
             src_len = sample['len']
             tgt_len = [len(str(x)) for x in res.numpy()]
 
-            img = img.to(DEVICE)
             src = src.to(DEVICE)
             tgt = tgt.to(DEVICE)
-            output = model(img, src, tgt[:, :-1], src_len, tgt_len)
+            output = model(src, tgt[:, :-1], src_len, tgt_len)
             loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
 
             optimizer.zero_grad()
@@ -247,7 +250,7 @@ def train(model, args, st_epoch=0):
         print("Train acc: %.2f, loss: %.3f "%(train_acc * 100, train_loss))
             
         if ((epoch+1) % args.epochs_eval == 0) or (epoch+1 == args.epochs):
-            perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader)
+            perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
             print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
             if result_acc > best_acc:
                 best_acc = result_acc
@@ -264,7 +267,7 @@ def train(model, args, st_epoch=0):
     print('Evaluate on test set...')
     eval_dataloader = torch.utils.data.DataLoader(args.test_set, batch_size=64,
                          shuffle=False, num_workers=4, collate_fn=HINT_collate)
-    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, log_prefix='test')
+    perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args, log_prefix='test')
     print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('test', 100*perception_acc, 100*head_acc, 100*result_acc))
     return
 
@@ -282,10 +285,10 @@ if __name__ == "__main__":
     # torch.set_deterministic(True)
 
     # train_set = HINT('train', numSamples=5000)
-    train_set = HINT('train')
-    val_set = HINT('val')
+    train_set = HINT('train', input=args.input)
+    val_set = HINT('val', input=args.input)
     # test_set = HINT('val')
-    test_set = HINT('test')
+    test_set = HINT('test', input=args.input)
     print('train:', len(train_set), 'val:', len(val_set), 'test:', len(test_set))
 
     model = make_model(args)

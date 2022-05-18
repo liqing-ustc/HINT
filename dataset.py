@@ -10,11 +10,12 @@ from torch.utils.data.dataloader import default_collate
 from torchvision import transforms
 
 class HINT(Dataset):
-    def __init__(self, split='train', exclude_symbols=None, max_len=None, numSamples=None, fewshot=-1):
+    def __init__(self, split='train', input='image', exclude_symbols=None, max_len=None, numSamples=None, fewshot=-1):
         super(HINT, self).__init__()
         
         assert split in ['train', 'val', 'test']
         self.split = split
+        self.input = input
         self.dataset = json.load(open(ROOT_DIR + ('fewshot_%d_'%fewshot if fewshot !=-1 else '') + 'expr_%s.json'%split))
         if numSamples:
             random.shuffle(self.dataset)
@@ -76,19 +77,20 @@ class HINT(Dataset):
     def __getitem__(self, index):
         index = self.valid_ids[index]
         sample = deepcopy(self.dataset[index])
-        img_seq = []
-        for img_path in sample['img_paths']:
-            img = Image.open(IMG_DIR+img_path).convert('L')
-            img = ImageOps.invert(img)
-            img = pad_image(img, 60)
-            img = transforms.functional.resize(img, 40)
-            img = self.img_transform(img)
-            img_seq.append(img)
+        if self.input == 'image':
+            img_seq = []
+            for img_path in sample['img_paths']:
+                img = Image.open(IMG_DIR+img_path).convert('L')
+                img = ImageOps.invert(img)
+                img = pad_image(img, 60)
+                img = transforms.functional.resize(img, 40)
+                img = self.img_transform(img)
+                img_seq.append(img)
+            sample['img_seq'] = img_seq
         # del sample['img_paths']
         sample['expr'] = ''.join(sample['expr'])
         
         sentence = [SYM2ID(sym) for sym in sample['expr']]
-        sample['img_seq'] = img_seq
         sample['sentence'] = sentence
         return sample
             
@@ -119,8 +121,9 @@ def HINT_collate(batch):
     head_list = []
     res_all_list = []
     for sample in batch:
-        img_seq_list.extend(sample['img_seq'])
-        del sample['img_seq']
+        if 'img_seq' in sample:
+            img_seq_list.extend(sample['img_seq'])
+            del sample['img_seq']
 
         img_paths_list.append(sample['img_paths'])
         del sample['img_paths']
@@ -135,7 +138,8 @@ def HINT_collate(batch):
         del sample['res_all']
         
     batch = default_collate(batch)
-    batch['img_seq'] = torch.stack(img_seq_list)
+    if img_seq_list:
+        batch['img_seq'] = torch.stack(img_seq_list)
     batch['img_paths'] = img_paths_list
     batch['sentence'] = sentence_list
     batch['head'] = head_list

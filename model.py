@@ -78,8 +78,8 @@ class NeuralArithmetic(nn.Module):
             import transformer
             self.seq2seq = transformer.create_model(config)
     
-    def forward(self, img, src, tgt, src_len, tgt_len):
-        src = self.embedding_in(img if self.embedding_in.image_input else src, src_len)
+    def forward(self, src, tgt, src_len, tgt_len):
+        src = self.embedding_in(src, src_len)
         output = self.seq2seq(src, src_len, tgt, tgt_len)
         return output
 
