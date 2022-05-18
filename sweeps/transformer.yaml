@@ -5,7 +5,7 @@ metric:
   goal: maximize
 parameters:
   epochs:
-    value: 10
+    value: 1
   epochs_eval:
     value: 1
   dropout:
@@ -15,10 +15,12 @@ parameters:
   seq2seq:
     value: transformer
   lr:
-    values: [0.0001, 0.00001]
+    value: 0.0001
   transformer:
     values: [opennmt, relative, relative_universal]
+  nhead:
+    values: [4, 8]
   layers:
-    values: [1, 3, 6]
+    values: [3, 6]
   hid_dim:
-    values: [128, 256, 512]
+    values: [128, 256]
