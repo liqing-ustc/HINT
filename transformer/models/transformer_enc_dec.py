@@ -12,7 +12,7 @@ class TransformerEncDecModel(torch.nn.Module):
     def __init__(self, n_input_tokens: int, n_out_tokens: int, state_size: int = 512, ff_multiplier: float = 4,
                  max_len: int=5000, transformer = Transformer, tied_embedding: bool=False,
                  decoder_sos: int=None, decoder_eos: int=None,
-                 pos_embeddig: Optional[Callable[[torch.Tensor, int], torch.Tensor]] = None,
+                 pos_embeddig: Optional[Callable[[torch.Tensor, int], torch.Tensor]] = None, pos_emb_type='sin',
                  same_enc_dec_embedding: bool = False, embedding_init: str = "pytorch",
                  in_embedding_size: Optional[int] = None, out_embedding_size: Optional[int] = None, 
                  scale_mode: str = "none", **kwargs):
@@ -43,19 +43,21 @@ class TransformerEncDecModel(torch.nn.Module):
         self.out_embedding_size = out_embedding_size
         self.same_enc_dec_embedding = same_enc_dec_embedding
         self.scale_mode = scale_mode
-        # TODO: why the same position embeddings of input and output?
-        self.pos = pos_embeddig or framework.layers.PositionalEncoding(state_size, max_len=max_len, batch_first=True,
-                                        scale=(1.0 / math.sqrt(state_size)) if scale_mode == "down" else 1.0)
+        self.src_pos = pos_embeddig or framework.layers.PositionalEncoding(state_size, max_len=max_len, batch_first=True,
+                                emb_type=pos_emb_type, scale=(1.0 / math.sqrt(state_size)) if scale_mode == "down" else 1.0)
+        self.tgt_pos = pos_embeddig or framework.layers.PositionalEncoding(state_size, max_len=max_len, batch_first=True,
+                                emb_type=pos_emb_type, scale=(1.0 / math.sqrt(state_size)) if scale_mode == "down" else 1.0)
         
         self.register_buffer('int_seq', torch.arange(max_len, dtype=torch.long))
         self.construct(transformer, **kwargs)
         self.reset_parameters()
 
-    def pos_embed(self, t: torch.Tensor, offset: int, scale_offset: int) -> torch.Tensor:
+    def pos_embed(self, t: torch.Tensor, offset: int, src_or_tgt: int) -> torch.Tensor:
         if self.scale_mode == "opennmt":
             t = t * math.sqrt(t.shape[-1])
         
-        return self.pos(t, offset)
+        pos = self.src_pos if src_or_tgt == 0 else self.tgt_pos
+        return pos(t, offset)
 
     def construct(self, transformer, **kwargs):
         self.output_embedding = torch.nn.Embedding(self.n_out_tokens, self.out_embedding_size or self.state_size)

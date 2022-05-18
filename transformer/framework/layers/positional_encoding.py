@@ -33,16 +33,20 @@ class PositionalEncoding(torch.nn.Module):
     """
 
     def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000, batch_first: bool = False,
-                 scale: float = 1):
+                 scale: float = 1, emb_type='sin'):
         super(PositionalEncoding, self).__init__()
         self.dropout = torch.nn.Dropout(p=dropout)
 
-        pe = sinusoidal_pos_embedding(d_model, max_len, 0) * scale
-
         self.batch_dim = 0 if batch_first else 1
-        pe = pe.unsqueeze(self.batch_dim)
-
-        self.register_buffer('pe', pe)
+        if emb_type == 'sin':
+            pe = sinusoidal_pos_embedding(d_model, max_len, 0) * scale
+            pe = pe.unsqueeze(self.batch_dim)
+            self.register_buffer('pe', pe)
+        elif emb_type == 'learn':
+            shape = (1, max_len, d_model) if batch_first else (max_len, 1, d_model)
+            pe = torch.nn.Parameter(torch.Tensor(*shape))
+            torch.nn.init.normal_(pe)
+            self.pe = pe
 
     def get(self, n: int, offset: int) -> torch.Tensor:
         return self.pe.narrow(1 - self.batch_dim, start=offset, length=n)

@@ -44,6 +44,7 @@ def parse_args():
 
     parser.add_argument('--input', default='image', choices=['image', 'symbol'], help='whether to provide perfect perception, i.e., no need to learn')
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
+    parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')

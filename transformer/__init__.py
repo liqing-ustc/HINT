@@ -30,4 +30,5 @@ def create_model(config) -> torch.nn.Module:
 									out_embedding_size=config.emb_dim,
 									nhead=config.nhead,
 									dropout=config.dropout,
+									pos_emb_type=config.pos_emb_type,
 									**args)

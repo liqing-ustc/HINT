@@ -16,10 +16,6 @@ parameters:
     value: transformer
   lr:
     value: 0.001
-  lr_scheduler:
-    value: warmup
-  warmup_steps:
-    values: [100, 200, 300]
   transformer:
     value: relative
   nhead:
@@ -28,3 +24,5 @@ parameters:
     value: 1
   hid_dim:
     value: 128
+  pos_emb_type:
+    values: [sin, learn]
