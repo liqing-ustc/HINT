@@ -47,7 +47,9 @@ def parse_args():
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--grad_clip', type=float, default=None)
+    parser.add_argument('--lr_scheduler', default='constant', choices=['constant', 'warmup'])
+    parser.add_argument('--warmup_steps', type=int, default=100)
+    parser.add_argument('--grad_clip', type=float, default=5.0)
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs for training')
     parser.add_argument('--epochs_eval', type=int, default=1, help='how many epochs per evaluation')
     args = parser.parse_args()
@@ -165,11 +167,12 @@ def train(model, args, st_epoch=0):
     eval_dataloader = torch.utils.data.DataLoader(args.val_set, batch_size=32,
                          shuffle=False, num_workers=4, collate_fn=HINT_collate)
 
-    # optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=0.02)
-    # lr_scheduler = WarmupLinearSchedule(optimizer, warmup_steps=10 * len(train_dataloader), t_total=args.epochs*len(train_dataloader),
-    #                  last_epoch=st_epoch*len(train_dataloader)-1)
     optimizer = Adam(model.parameters(), lr=args.lr)
-    lr_scheduler = ConstantLRSchedule(optimizer)
+    if args.lr_scheduler == 'constant':
+        lr_scheduler = ConstantLRSchedule(optimizer)
+    elif args.lr_scheduler == 'warmup':
+        lr_scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=args.epochs*len(train_dataloader),
+                     last_epoch=st_epoch*len(train_dataloader)-1)
     criterion = nn.CrossEntropyLoss(ignore_index=RES_VOCAB.index(NULL))
     
     max_len = float("inf")
@@ -227,7 +230,7 @@ def train(model, args, st_epoch=0):
 
             optimizer.zero_grad()
             loss.backward()
-            if args.grad_clip:
+            if args.grad_clip > 0:
                 nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
             lr_scheduler.step()

@@ -16,6 +16,10 @@ parameters:
     value: transformer
   lr:
     value: 0.001
+  lr_schedule:
+    value: warmup
+  warmup_steps:
+    values: [100, 200, 300]
   transformer:
     value: relative
   nhead:
@@ -24,5 +28,3 @@ parameters:
     value: 1
   hid_dim:
     value: 128
-  grad_clip:
-    values: [0.1, 1, 5]
