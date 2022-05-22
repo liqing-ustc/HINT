@@ -6,6 +6,8 @@ metric:
 parameters:
   input:
     value: symbol
+  result_encoding:
+    value: binary
   seq2seq:
     values: [GRU, LSTM]
   batch_size:
