@@ -10,3 +10,5 @@ log.txt
 *.p
 tmp/
 wandb/
+data/dataset.tar.xz
+data/symbol_images.tar.xz
