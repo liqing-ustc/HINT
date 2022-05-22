@@ -276,6 +276,9 @@ if __name__ == "__main__":
 
     print(args)
     print(model)
+    n_params = sum(p.numel() for p in model.parameters())
+    wandb.log({'n_params': n_params})
+    print('Num params:', n_params)
     args.train_set = train_set
     args.val_set = val_set
     args.test_set = test_set
