@@ -19,6 +19,7 @@ import os
 from torch.optim import Adam
 from optimization import AdamW, WarmupLinearSchedule, ConstantLRSchedule
 from utils import *
+from result_encoding import ResultEncoding
 
 def parse_args():
     parser = argparse.ArgumentParser('Give Me A HINT')
@@ -47,6 +48,7 @@ def parse_args():
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
     parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
     parser.add_argument('--save_model', default='no', choices=['yes', 'no'])
+    parser.add_argument('--result_encoding', default='decimal', choices=['decimal', 'binary', 'sin'])
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
@@ -82,7 +84,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
             elif args.input == 'symbol':
                 src = torch.tensor([x for s in sample['sentence'] for x in s])
             res = sample['res']
-            tgt = torch.tensor(res2seq(res.numpy()))
+            tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
             expr = sample['expr']
             dep = sample['head']
             src_len = sample['len']
@@ -93,7 +95,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
 
             output = model(src, tgt[:, :-1], src_len, tgt_len)
             pred = torch.argmax(output, -1).detach().cpu().numpy()
-            res_pred = [seq2res(x) for x in pred]
+            res_pred = args.res_enc.seq2res_batch(pred)
             res_pred_all.append(res_pred)
             res_all.append(res)
 
@@ -180,8 +182,7 @@ def train(model, args, st_iter=0):
         lr_scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=args.epochs*len(train_dataloader),
                      last_epoch=st_iter-1)
     
-    tgt_null_idx = RES_VOCAB.index(NULL)
-    criterion = nn.CrossEntropyLoss(ignore_index=tgt_null_idx)
+    criterion = nn.CrossEntropyLoss(ignore_index=args.res_enc.null_idx)
     
     ##########evaluate init model###########
     perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
@@ -202,7 +203,7 @@ def train(model, args, st_iter=0):
         elif args.input == 'symbol':
             src = torch.tensor([x for s in sample['sentence'] for x in s])
         res = sample['res']
-        tgt = torch.tensor(res2seq(res.numpy()))
+        tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
         src_len = sample['len']
         tgt_len = [len(str(x)) for x in res.numpy()]
 
@@ -219,7 +220,7 @@ def train(model, args, st_iter=0):
         lr_scheduler.step()
 
         pred = torch.argmax(output, -1)
-        acc = torch.logical_or(pred == tgt[:, 1:], tgt[:, 1:] == tgt_null_idx)
+        acc = torch.logical_or(pred == tgt[:, 1:], tgt[:, 1:] == args.res_enc.null_idx)
         acc = acc.all(axis=1).float().mean()
 
         wandb.log({'train/step': step, 'train/loss': loss.cpu().item(), 
@@ -254,6 +255,7 @@ if __name__ == "__main__":
     ckpt_dir = os.path.join(wandb.run.dir, '../ckpt')
     os.makedirs(ckpt_dir)
     args.ckpt_dir = ckpt_dir
+    print(args)
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -267,6 +269,8 @@ if __name__ == "__main__":
     # test_set = HINT('val')
     test_set = HINT('test', input=args.input)
     print('train:', len(train_set), 'val:', len(val_set), 'test:', len(test_set))
+    
+    args.res_enc = ResultEncoding(args.result_encoding)
 
     model = make_model(args)
     model.to(DEVICE)
@@ -274,7 +278,6 @@ if __name__ == "__main__":
     if args.perception_pretrain and args.input == 'image':
         model.embedding_in.image_encoder.load_state_dict(torch.load(args.perception_pretrain))
 
-    print(args)
     print(model)
     n_params = sum(p.numel() for p in model.parameters())
     wandb.log({'n_params': n_params})

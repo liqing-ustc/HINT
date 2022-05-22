@@ -11,7 +11,7 @@ import time
 from tqdm import tqdm
 
 import resnet_scan
-from utils import SYMBOLS, INP_VOCAB, RES_VOCAB, DEVICE, START, NULL, END, RES_MAX_LEN
+from utils import INP_VOCAB, DEVICE, START, NULL, END
 from rnn import RNNModel
 
 class EmbeddingIn(nn.Module):
@@ -59,9 +59,9 @@ class NeuralArithmetic(nn.Module):
         self.config = config
 
         config.in_vocab_size = len(INP_VOCAB)
-        config.out_vocab_size = len(RES_VOCAB)
-        config.decoder_sos = RES_VOCAB.index(START)
-        config.decoder_eos = RES_VOCAB.index(END)
+        config.out_vocab_size = len(config.res_enc.vocab)
+        config.decoder_sos = config.res_enc.start_idx
+        config.decoder_eos = config.res_enc.end_idx
 
         config.embedding_init = 'pytorch'
         if config.seq2seq == 'transformer':
