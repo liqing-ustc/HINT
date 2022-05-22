@@ -1,5 +1,5 @@
 import time
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from collections import Counter
 
 from dataset import HINT, HINT_collate
@@ -15,6 +15,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 import wandb
 import argparse
 import sys
+import os
 from torch.optim import Adam
 from optimization import AdamW, WarmupLinearSchedule, ConstantLRSchedule
 from utils import *
@@ -45,12 +46,15 @@ def parse_args():
     parser.add_argument('--input', default='image', choices=['image', 'symbol'], help='whether to provide perfect perception, i.e., no need to learn')
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
     parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
+    parser.add_argument('--save_model', default='no', choices=['yes', 'no'])
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('--lr_scheduler', default='constant', choices=['constant', 'warmup'])
     parser.add_argument('--warmup_steps', type=int, default=100)
     parser.add_argument('--grad_clip', type=float, default=5.0)
+    parser.add_argument('--iterations', type=int, default=None, help='number of iterations for training')
+    parser.add_argument('--iterations_eval', type=int, default=None, help='how many iterations per evaluation')
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs for training')
     parser.add_argument('--epochs_eval', type=int, default=1, help='how many epochs per evaluation')
     args = parser.parse_args()
@@ -161,7 +165,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
 
     return 0., 0., result_acc
 
-def train(model, args, st_epoch=0):
+def train(model, args, st_iter=0):
     best_acc = 0.0
     batch_size = args.batch_size
     train_dataloader = torch.utils.data.DataLoader(args.train_set, batch_size=batch_size,
@@ -174,94 +178,63 @@ def train(model, args, st_epoch=0):
         lr_scheduler = ConstantLRSchedule(optimizer)
     elif args.lr_scheduler == 'warmup':
         lr_scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=args.epochs*len(train_dataloader),
-                     last_epoch=st_epoch*len(train_dataloader)-1)
-    criterion = nn.CrossEntropyLoss(ignore_index=RES_VOCAB.index(NULL))
+                     last_epoch=st_iter-1)
     
-    max_len = float("inf")
-    if args.curriculum == 'manual':
-        curriculum_strategy = dict([
-            # (0, 7)
-            (0, 1),
-            (1, 3),
-            (20, 7),
-            (40, 11),
-            (60, 15),
-            (80, float('inf')),
-        ])
-        print("Curriculum:", sorted(curriculum_strategy.items()))
-        for e, l in sorted(curriculum_strategy.items(), reverse=True):
-            if st_epoch >= e:
-                max_len = l
-                break
-        train_set.filter_by_len(max_len=max_len)
-        train_dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
-                            shuffle=True, num_workers=4, collate_fn=HINT_collate)
+    tgt_null_idx = RES_VOCAB.index(NULL)
+    criterion = nn.CrossEntropyLoss(ignore_index=tgt_null_idx)
     
     ##########evaluate init model###########
     perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
-    print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
+    print('Iter {}: {} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format(0, 'val', 100*perception_acc, 100*head_acc, 100*result_acc))
     ########################################
 
-    for epoch in range(st_epoch, args.epochs):
-        if args.curriculum == 'manual' and epoch in curriculum_strategy:
-            max_len = curriculum_strategy[epoch]
-            train_set.filter_by_len(max_len=max_len)
-            train_dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
-                                shuffle=True, num_workers=4, collate_fn=HINT_collate)
+    train_iter = iter(train_dataloader)
+    model.train()
+    for step in trange(st_iter, args.iterations):
+        try:
+            sample = next(train_iter)
+        except StopIteration:
+            train_iter = iter(train_dataloader)
+            sample = next(train_iter)
 
-        since = time.time()
-        print('-' * 30)
-        print('Epoch {}/{} (max_len={}, data={}, lr={})'.format(epoch, args.epochs - 1, max_len, len(train_set), lr_scheduler.get_lr()[0]))
+        if args.input == 'image':
+            src = sample['img_seq']
+        elif args.input == 'symbol':
+            src = torch.tensor([x for s in sample['sentence'] for x in s])
+        res = sample['res']
+        tgt = torch.tensor(res2seq(res.numpy()))
+        src_len = sample['len']
+        tgt_len = [len(str(x)) for x in res.numpy()]
 
-        model.train()
-        train_acc = []
-        train_loss = []
-        for sample in tqdm(train_dataloader):
-            if args.input == 'image':
-                src = sample['img_seq']
-            elif args.input == 'symbol':
-                src = torch.tensor([x for s in sample['sentence'] for x in s])
+        src = src.to(DEVICE)
+        tgt = tgt.to(DEVICE)
+        output = model(src, tgt[:, :-1], src_len, tgt_len)
+        loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
 
-            res = sample['res']
-            tgt = torch.tensor(res2seq(res.numpy()))
-            src_len = sample['len']
-            tgt_len = [len(str(x)) for x in res.numpy()]
+        optimizer.zero_grad()
+        loss.backward()
+        if args.grad_clip > 0:
+            nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        optimizer.step()
+        lr_scheduler.step()
 
-            src = src.to(DEVICE)
-            tgt = tgt.to(DEVICE)
-            output = model(src, tgt[:, :-1], src_len, tgt_len)
-            loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
+        pred = torch.argmax(output, -1)
+        acc = torch.logical_or(pred == tgt[:, 1:], tgt[:, 1:] == tgt_null_idx)
+        acc = acc.all(axis=1).float().mean()
 
-            optimizer.zero_grad()
-            loss.backward()
-            if args.grad_clip > 0:
-                nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-            optimizer.step()
-            lr_scheduler.step()
-            train_loss.append(loss.cpu().item())
-
-            pred = torch.argmax(output, -1).detach().cpu().numpy()
-            res_pred = [seq2res(x) for x in pred]
-            acc = np.mean(np.array(res_pred) == res.numpy())
-            train_acc.append(acc)
-
-            wandb.log({'train/loss': loss.cpu().item(), 'train/result_acc': acc})
-        train_acc = np.mean(train_acc)
-        train_loss = np.mean(train_loss)
-        print("Train acc: %.2f, loss: %.3f "%(train_acc * 100, train_loss))
+        wandb.log({'train/step': step, 'train/loss': loss.cpu().item(), 
+                'train/result_acc': acc.cpu().item(), 'train/lr': lr_scheduler.get_last_lr()[0]})
             
-        if ((epoch+1) % args.epochs_eval == 0) or (epoch+1 == args.epochs):
+        if ((step+1) % args.iterations_eval == 0) or (step+1 == args.iterations):
             perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
-            print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('val', 100*perception_acc, 100*head_acc, 100*result_acc))
+            print('Iter {}: {} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format(step+1, 'val', 100*perception_acc, 100*head_acc, 100*result_acc))
             if result_acc > best_acc:
                 best_acc = result_acc
 
-            # model_path = args.output_dir + "model_%03d.p"%(epoch + 1)
-            # model.save(model_path, epoch=epoch+1)
-                
-        time_elapsed = time.time() - since
-        print('Epoch time: {:.0f}m {:.0f}s'.format(
-            time_elapsed // 60, time_elapsed % 60))
+            if args.save_model == 'yes':
+                model_path = os.path.join(args.ckpt_dir, f'model_{step+1}.p')
+                torch.save({'step': step+1, 'model_state_dict': model.state_dict()}, model_path)
+            model.train()
 
     # Test
     print('-' * 30)
@@ -269,7 +242,7 @@ def train(model, args, st_epoch=0):
     eval_dataloader = torch.utils.data.DataLoader(args.test_set, batch_size=64,
                          shuffle=False, num_workers=4, collate_fn=HINT_collate)
     perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args, log_prefix='test')
-    print('{} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format('test', 100*perception_acc, 100*head_acc, 100*result_acc))
+    print('Iter {}: {} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format(args.iterations, 'test', 100*perception_acc, 100*head_acc, 100*result_acc))
     return
 
 
@@ -277,7 +250,10 @@ def train(model, args, st_epoch=0):
 if __name__ == "__main__":
     args = parse_args()
     sys.argv = sys.argv[:1]
-    wandb.init(project=args.wandb, config=vars(args))
+    wandb.init(project=args.wandb, dir=args.output_dir, config=vars(args))
+    ckpt_dir = os.path.join(wandb.run.dir, '../ckpt')
+    os.makedirs(ckpt_dir)
+    args.ckpt_dir = ckpt_dir
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -298,18 +274,16 @@ if __name__ == "__main__":
     if args.perception_pretrain and args.input == 'image':
         model.embedding_in.image_encoder.load_state_dict(torch.load(args.perception_pretrain))
 
-    st_epoch = 0
-    if args.resume:
-        st_epoch = model.load(args.resume)
-        if st_epoch is None:
-            st_epoch = 0
-
-
     print(args)
     print(model)
     args.train_set = train_set
     args.val_set = val_set
     args.test_set = test_set
 
-    train(model, args, st_epoch=st_epoch)
+    if not args.iterations:
+        args.iterations = args.epochs * len(train_set)
+    if not args.iterations_eval:
+        args.iterations_eval = args.epochs_eval * len(train_set)
+
+    train(model, args)
 

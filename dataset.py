@@ -69,8 +69,10 @@ class HINT(Dataset):
         self.digit2ids = digit2ids
 
         if split in ['val', 'test']:
-            cond2ids = {i: [] for i in range(1, 6)}
+            cond2ids = {}
             for i, x in enumerate(self.dataset):
+                if x['eval'] not in cond2ids:
+                    cond2ids[x['eval']] = []
                 cond2ids[x['eval']].append(i)
             self.cond2ids = cond2ids
 
