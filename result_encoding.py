@@ -4,8 +4,8 @@ class ResultEncoding:
 	def __init__(self, encoding='decimal', reverse=True):
 		super().__init__()
 
-		assert encoding in ['decimal', 'binary']
-		base = 10 if encoding == 'decimal' else 2
+		assert encoding in ['decimal', 'binary', 'sin']
+		base = 2 if encoding == 'binary' else 10
 		vocab = list(map(str, range(base))) + [START, END, NULL]
 
 		self.reverse = reverse

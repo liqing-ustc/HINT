@@ -7,9 +7,9 @@ parameters:
   input:
     value: symbol
   result_encoding:
-    value: binary
+    value: sin
   seq2seq:
-    values: [GRU, LSTM]
+    values: [LSTM, GRU]
   batch_size:
     value: 128
   iterations:

@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from on_lstm import ONLSTMStack
 from ordered_memory import OrderedMemory
+from sin_decoder import SinDecoder
 
 
 def create_padding_mask(lens):
@@ -35,31 +36,33 @@ class RNNModel(nn.Module):
 		dec_layers = config.dec_layers
 		dropout = config.dropout
 
+		# encoder
 		if config.seq2seq == 'LSTM':
-			self.dec_hid_dim = hid_dim * 2
 			self.encoder = nn.LSTM(emb_dim, hid_dim, enc_layers, dropout=dropout, bidirectional=True)
-			self.decoder = nn.LSTM(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 		elif config.seq2seq == 'GRU':
-			self.dec_hid_dim = hid_dim * 2
 			self.encoder = nn.GRU(emb_dim, hid_dim, enc_layers, dropout=dropout, bidirectional=True)
-			self.decoder = nn.GRU(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 		elif config.seq2seq == 'ON':
-			self.dec_hid_dim = hid_dim
 			self.encoder = ONLSTMStack([emb_dim] + [hid_dim] * enc_layers, chunk_size=8, dropconnect=dropout, dropout=dropout)
-			self.decoder = nn.LSTM(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 		elif config.seq2seq == 'OM':
-			self.dec_hid_dim = hid_dim
 			self.encoder = OrderedMemory(emb_dim, hid_dim, nslot=21, bidirection=False)
-			self.decoder = nn.GRU(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 		else:
 			pass
 
-		self.embedding_out = nn.Embedding(config.out_vocab_size, config.emb_dim)
-		self.classifier_out = nn.Linear(self.dec_hid_dim, config.out_vocab_size)
+		# decoder
+		dec_hid_dim = hid_dim * 2 if config.seq2seq in ['GRU', 'LSTM'] else hid_dim
+		if config.result_encoding == 'sin':
+			self.decoder = SinDecoder(inp_dim=dec_hid_dim, feedforward_dims=[4 * dec_hid_dim])
+		else:
 
-	def forward(self, src, src_len, tgt, tgt_len, teacher_forcing_ratio=0.5):
-		src = src.transpose(0, 1)
-		tgt = tgt.transpose(0, 1)
+			if config.seq2seq in ['LSTM', 'ON']:
+				self.decoder = nn.LSTM(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
+			elif config.seq2seq in ['GRU', 'OM']:
+				self.decoder = nn.GRU(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
+
+			self.embedding_out = nn.Embedding(config.out_vocab_size, config.emb_dim)
+			self.classifier_out = nn.Linear(self.dec_hid_dim, config.out_vocab_size)
+
+	def encode(self, src, src_len):
 		if self.config.seq2seq == 'GRU':
 			_, hidden = self.encoder(src)
 			hidden = hidden.view(-1, 2, *hidden.shape[1:])[-1].transpose(0, 1)
@@ -92,13 +95,22 @@ class RNNModel(nn.Module):
 			h = torch.stack([h] * self.config.dec_layers)
 			hidden = h
 
+		return hidden
+
+	def decode(self, hidden, tgt, teacher_forcing_ratio):
+		if self.config.result_encoding == 'sin':
+			if isinstance(hidden, tuple):
+				hidden = hidden[0]
+			hidden = hidden[0]
+			return self.decoder(hidden)
+
 		use_teacher_forcing = True if self.training and random.random() < teacher_forcing_ratio else False
 		if use_teacher_forcing:
 			tgt = self.embedding_out(tgt)
 			output, _ = self.decoder(tgt, hidden)
 			output = self.classifier_out(F.relu(output))
 		else:
-			decoder_input = torch.tensor([[self.config.decoder_sos] * src.size(1)], device=src.device)
+			decoder_input = torch.tensor([[self.config.decoder_sos] * tgt.size(1)], device=tgt.device)
 			output_list = []
 
 			for i in range(tgt.size(0)):
@@ -112,3 +124,12 @@ class RNNModel(nn.Module):
 			
 			output = torch.stack(output_list)
 		return output.transpose(0, 1)
+
+	def forward(self, src, src_len, tgt, tgt_len, teacher_forcing_ratio=0.5):
+		src = src.transpose(0, 1)
+		tgt = tgt.transpose(0, 1)
+		hidden = self.encode(src, src_len)
+		output = self.decode(hidden, tgt, teacher_forcing_ratio)
+
+		return output
+

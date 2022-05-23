@@ -49,6 +49,8 @@ def parse_args():
     parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
     parser.add_argument('--save_model', default='no', choices=['yes', 'no'])
     parser.add_argument('--result_encoding', default='decimal', choices=['decimal', 'binary', 'sin'])
+    parser.add_argument('--cos_sim_margin', type=float, default=0.2, 
+                    help='the margin used to compute the loss for sin result encoding.')
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
@@ -84,7 +86,10 @@ def evaluate(model, dataloader, args, log_prefix='val'):
             elif args.input == 'symbol':
                 src = torch.tensor([x for s in sample['sentence'] for x in s])
             res = sample['res']
-            tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
+            if args.result_encoding == 'sin':
+                tgt = res.unsqueeze(1)
+            else:
+                tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
             expr = sample['expr']
             dep = sample['head']
             src_len = sample['len']
@@ -95,7 +100,10 @@ def evaluate(model, dataloader, args, log_prefix='val'):
 
             output = model(src, tgt[:, :-1], src_len, tgt_len)
             pred = torch.argmax(output, -1).detach().cpu().numpy()
-            res_pred = args.res_enc.seq2res_batch(pred)
+            if args.result_encoding == 'sin':
+                res_pred = pred
+            else:
+                res_pred = args.res_enc.seq2res_batch(pred)
             res_pred_all.append(res_pred)
             res_all.append(res)
 
@@ -182,7 +190,11 @@ def train(model, args, st_iter=0):
         lr_scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=args.epochs*len(train_dataloader),
                      last_epoch=st_iter-1)
     
-    criterion = nn.CrossEntropyLoss(ignore_index=args.res_enc.null_idx)
+    if args.result_encoding == 'sin':
+        # criterion = nn.MultiMarginLoss(margin=args.cos_sim_margin)
+        criterion = nn.CrossEntropyLoss()
+    else:
+        criterion = nn.CrossEntropyLoss(ignore_index=args.res_enc.null_idx)
     
     ##########evaluate init model###########
     perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
@@ -203,14 +215,20 @@ def train(model, args, st_iter=0):
         elif args.input == 'symbol':
             src = torch.tensor([x for s in sample['sentence'] for x in s])
         res = sample['res']
-        tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
+        if args.result_encoding == 'sin':
+            tgt = res.unsqueeze(1)
+        else:
+            tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
         src_len = sample['len']
         tgt_len = [len(str(x)) for x in res.numpy()]
 
         src = src.to(DEVICE)
         tgt = tgt.to(DEVICE)
         output = model(src, tgt[:, :-1], src_len, tgt_len)
-        loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
+        if args.result_encoding == 'sin':
+            loss = criterion(output, tgt.flatten())
+        else:
+            loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
 
         optimizer.zero_grad()
         loss.backward()
@@ -220,8 +238,12 @@ def train(model, args, st_iter=0):
         lr_scheduler.step()
 
         pred = torch.argmax(output, -1)
-        acc = torch.logical_or(pred == tgt[:, 1:], tgt[:, 1:] == args.res_enc.null_idx)
-        acc = acc.all(axis=1).float().mean()
+        if args.result_encoding == 'sin':
+            acc = pred == tgt.flatten()
+        else:
+            acc = torch.logical_or(pred == tgt[:, 1:], tgt[:, 1:] == args.res_enc.null_idx)
+            acc = acc.all(axis=1)
+        acc = acc.float().mean()
 
         wandb.log({'train/step': step, 'train/loss': loss.cpu().item(), 
                 'train/result_acc': acc.cpu().item(), 'train/lr': lr_scheduler.get_last_lr()[0]})
