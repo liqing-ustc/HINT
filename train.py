@@ -227,6 +227,7 @@ def train(model, args, st_iter=0):
         output = model(src, tgt[:, :-1], src_len, tgt_len)
         if args.result_encoding == 'sin':
             loss = criterion(output, tgt.flatten())
+            # loss = -output.gather(1, tgt).mean()
         else:
             loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
 

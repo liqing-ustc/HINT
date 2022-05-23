@@ -13,12 +13,12 @@ def sinusoidal_embedding(d_model, max_len=10000, device=None):
     return emb
 
 class SinDecoder(nn.Module):
-	def __init__(self, inp_dim, feedforward_dims=[]):
+	def __init__(self, inp_dim, res_dim, feedforward_dims=[]):
 		super().__init__()
 
-		self.ffw = self.build_ffw([inp_dim] + feedforward_dims + [inp_dim])
+		self.ffw = self.build_ffw([inp_dim] + feedforward_dims + [res_dim])
 
-		res_emb = sinusoidal_embedding(inp_dim)
+		res_emb = sinusoidal_embedding(res_dim)
 		# res_emb = F.normalize(res_emb, dim=1)
 		self.register_buffer('res_emb', res_emb)
 
@@ -37,6 +37,8 @@ class SinDecoder(nn.Module):
 		x = self.ffw(input)
 		# x = torch.matmul(F.normalize(x, dim=1), self.res_emb.t())
 		x = torch.matmul(x, self.res_emb.t())
+		# x = x.unsqueeze(1) - self.res_emb.unsqueeze(0)
+		# x = -(x**2).mean(axis=-1)
 		return x
 
 
