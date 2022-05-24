@@ -55,12 +55,12 @@ class RNNModel(nn.Module):
 		else:
 
 			if config.seq2seq in ['LSTM', 'ON']:
-				self.decoder = nn.LSTM(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
+				self.decoder = nn.LSTM(emb_dim, dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 			elif config.seq2seq in ['GRU', 'OM']:
-				self.decoder = nn.GRU(emb_dim, self.dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
+				self.decoder = nn.GRU(emb_dim, dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 
 			self.embedding_out = nn.Embedding(config.out_vocab_size, config.emb_dim)
-			self.classifier_out = nn.Linear(self.dec_hid_dim, config.out_vocab_size)
+			self.classifier_out = nn.Linear(dec_hid_dim, config.out_vocab_size)
 
 	def encode(self, src, src_len):
 		if self.config.seq2seq == 'GRU':
