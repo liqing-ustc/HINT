@@ -50,7 +50,8 @@ class EmbeddingIn(nn.Module):
             padded_src.append(current_input)
             current += l
         src = torch.stack(padded_src)
-        return src
+        src_len = src_len + 2 # we append a start and end to every seq
+        return src, src_len
 
 
 class NeuralArithmetic(nn.Module):
@@ -77,9 +78,9 @@ class NeuralArithmetic(nn.Module):
             import transformer
             self.seq2seq = transformer.create_model(config)
     
-    def forward(self, src, tgt, src_len, tgt_len):
-        src = self.embedding_in(src, src_len)
-        output = self.seq2seq(src, src_len, tgt, tgt_len)
+    def forward(self, src, tgt, src_len):
+        src, src_len = self.embedding_in(src, src_len)
+        output = self.seq2seq(src, src_len, tgt)
         return output
 
 def make_model(config):

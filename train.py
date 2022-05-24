@@ -220,11 +220,10 @@ def train(model, args, st_iter=0):
         else:
             tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
         src_len = sample['len']
-        tgt_len = [len(str(x)) for x in res.numpy()]
 
         src = src.to(DEVICE)
         tgt = tgt.to(DEVICE)
-        output = model(src, tgt[:, :-1], src_len, tgt_len)
+        output = model(src, tgt[:, :-1], src_len)
         if args.result_encoding == 'sin':
             loss = criterion(output, tgt.flatten())
             # loss = -output.gather(1, tgt).mean()
