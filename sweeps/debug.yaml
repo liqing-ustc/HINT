@@ -1,3 +1,4 @@
+project: debug
 program: train.py
 method: grid
 metric:

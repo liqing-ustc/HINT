@@ -1,3 +1,4 @@
+project: HINT
 program: train.py
 method: grid
 metric:

@@ -1,0 +1,1 @@
+eval $(wandb sweep $1 2>&1 | grep -o "wandb agent .*")
