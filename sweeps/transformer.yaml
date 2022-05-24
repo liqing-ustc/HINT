@@ -9,7 +9,11 @@ parameters:
   seq2seq:
     value: transformer
   transformer:
-    values: [opennmt, relative, relative_universal]
+    # values: [opennmt, relative, relative_universal]
+    value: relative_universal
+  result_encoding:
+    # value: sin
+    values: [sin, decimal, binary]
   batch_size:
     value: 128
   iterations:
@@ -24,8 +28,8 @@ parameters:
     value: 8
     # values: [4, 8]
   layers:
-    value: 3
-    # values: [3, 6]
+    # value: 3
+    values: [3, 6, 9]
   hid_dim:
     value: 128
     # values: [128, 256]
