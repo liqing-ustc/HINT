@@ -93,12 +93,11 @@ def evaluate(model, dataloader, args, log_prefix='val'):
             expr = sample['expr']
             dep = sample['head']
             src_len = sample['len']
-            tgt_len = [len(str(x)) for x in res.numpy()]
 
             src = src.to(DEVICE)
             tgt = tgt.to(DEVICE)
 
-            output = model(src, tgt[:, :-1], src_len, tgt_len)
+            output = model(src, tgt[:, :-1], src_len)
             pred = torch.argmax(output, -1).detach().cpu().numpy()
             if args.result_encoding == 'sin':
                 res_pred = pred
