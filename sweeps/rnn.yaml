@@ -7,7 +7,8 @@ parameters:
   input:
     value: symbol
   result_encoding:
-    value: sin
+    # value: sin
+    values: [sin, decimal, binary]
   seq2seq:
     value: LSTM
   batch_size:
@@ -22,8 +23,8 @@ parameters:
   lr:
     value: 0.001
   layers:
-    # value: 3
-    values: [6, 9, 12]
+    value: 3
+    # values: [3, 6, 9]
   hid_dim:
     value: 512
     # values: [128, 256, 512]
