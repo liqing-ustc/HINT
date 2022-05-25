@@ -53,7 +53,8 @@ class BertModel(torch.nn.Module):
         self.trafo = transformer(d_model=self.state_size, dim_feedforward=int(self.ff_multiplier*self.state_size),
                                  **kwargs)
         self.trafo.decoder = None
-        self.result_decoder = SinDecoder(inp_dim=self.state_size, res_dim=self.out_embedding_size, feedforward_dims=[self.state_size])
+        self.result_decoder = SinDecoder(inp_dim=self.state_size, res_dim=self.out_embedding_size, 
+                            feedforward_dims=[self.state_size], dropout=kwargs['dropout'])
 
     def generate_len_mask(self, max_len: int, len: torch.Tensor) -> torch.Tensor:
         return self.int_seq[: max_len] >= len.unsqueeze(-1)

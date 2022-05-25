@@ -51,7 +51,7 @@ class RNNModel(nn.Module):
 		# decoder
 		dec_hid_dim = hid_dim * 2 if config.seq2seq in ['GRU', 'LSTM'] else hid_dim
 		if config.result_encoding == 'sin':
-			self.decoder = SinDecoder(inp_dim=dec_hid_dim, res_dim=emb_dim, feedforward_dims=[hid_dim])
+			self.decoder = SinDecoder(inp_dim=dec_hid_dim, res_dim=emb_dim, feedforward_dims=[hid_dim], dropout=dropout)
 		else:
 
 			if config.seq2seq in ['LSTM', 'ON']:

@@ -13,13 +13,13 @@ parameters:
     # values: [relative_universal, relative, opennmt]
     value: relative_universal
   result_encoding:
-    value: decimal
-    # values: [decimal, binary]
+    value: sin
+    # values: [decimal, sin, binary]
   batch_size:
     value: 128
   lr:
     # value: 0.001
-    values: [0.0001, 0.00001]
+    values: [0.001, 0.0001, 0.00001]
   iterations:
     value: 100000
   iterations_eval:
@@ -30,8 +30,8 @@ parameters:
     value: 8
     # values: [4, 8]
   layers:
-    value: 6
+    value: 3
     # values: [3, 6, 9]
   hid_dim:
-    value: 512
+    value: 128
     # values: [128, 256, 512]

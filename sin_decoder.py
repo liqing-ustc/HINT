@@ -13,21 +13,22 @@ def sinusoidal_embedding(d_model, max_len=10000, device=None):
     return emb
 
 class SinDecoder(nn.Module):
-	def __init__(self, inp_dim, res_dim, feedforward_dims=[]):
+	def __init__(self, inp_dim, res_dim, feedforward_dims=[], dropout=0.1):
 		super().__init__()
 
-		self.ffw = self.build_ffw([inp_dim] + feedforward_dims + [res_dim])
+		self.ffw = self.build_ffw([inp_dim] + feedforward_dims + [res_dim], dropout)
 
 		res_emb = sinusoidal_embedding(res_dim)
 		# res_emb = F.normalize(res_emb, dim=1)
 		self.register_buffer('res_emb', res_emb)
 
-	def build_ffw(self, dims):
+	def build_ffw(self, dims, dropout):
 		layers = []
 		last_h = dims[0]
 		for h in dims[1:-1]:
 			layers.append(nn.Linear(last_h, h))
 			layers.append(nn.ReLU())
+			layers.append(nn.Dropout(dropout))
 			last_h = h
 		layers.append(nn.Linear(last_h, dims[-1]))
 		return nn.Sequential(*layers)
