@@ -30,7 +30,7 @@ parameters:
     value: 8
     # values: [4, 8]
   layers:
-    value: 3
+    value: 6
     # values: [3, 6, 9]
   hid_dim:
     value: 512
