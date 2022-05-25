@@ -10,6 +10,7 @@ parser.add_argument('yaml', type=str, help='the yaml file for sweep.')
 parser.add_argument('--n_agent', type=int, default=None, help='the number of agents to run.')
 parser.add_argument('--gpus', type=str, default=None, help='the GPUs to use, e.g.: 1,2,3')
 parser.add_argument('--log_dir', type=str, default='outputs/', help='the dir for logging.')
+parser.add_argument('--sweep', type=str, default=None, help='continue the existing sweep.')
 
 args = parser.parse_args()
 
@@ -24,7 +25,10 @@ if not args.n_agent:
 
 print(f'Sweep {args.yaml} by {args.n_agent} agents on GPUs: {args.gpus}.')
 
-create_sweep = 'wandb sweep ' + args.yaml
+if not args.sweep:
+	create_sweep = 'wandb sweep ' + args.yaml
+else:
+	create_sweep = f'wandb sweep --update {args.sweep} {args.yaml}'
 result = subprocess.run(create_sweep, shell=True, capture_output=True, text=True)
 print(result.stderr)
 run_agent = re.search('wandb agent .*', result.stderr).group(0)
