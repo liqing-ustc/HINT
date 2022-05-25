@@ -8,7 +8,7 @@ parameters:
   input:
     value: symbol
   save_model:
-    value: yes
+    value: True
   model:
     # value: TRAN.relative_universal
     values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]

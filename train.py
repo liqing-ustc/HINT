@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('--input', default='image', choices=['image', 'symbol'], help='whether to provide perfect perception, i.e., no need to learn')
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
     parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
-    parser.add_argument('--save_model', default='no', choices=['yes', 'no'])
+    parser.add_argument('--save_model', default='False', choices=['True', 'False'])
     parser.add_argument('--result_encoding', default='decimal', choices=['decimal', 'binary', 'sin'])
     parser.add_argument('--cos_sim_margin', type=float, default=0.2, 
                     help='the margin used to compute the loss for sin result encoding.')
