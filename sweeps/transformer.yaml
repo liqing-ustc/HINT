@@ -7,6 +7,8 @@ metric:
 parameters:
   input:
     value: symbol
+  save_model:
+    value: yes
   model:
     # value: TRAN.relative_universal
     values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
