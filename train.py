@@ -1,6 +1,6 @@
 import time
 from tqdm import tqdm, trange
-from collections import Counter
+from collections import Counter, OrderedDict
 
 from dataset import HINT, HINT_collate
 from model import make_model
@@ -77,7 +77,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
     dep_all = []
     dep_pred_all = []
 
-    metrics = {}
+    metrics = OrderedDict()
 
     with torch.no_grad():
         for sample in tqdm(dataloader):
@@ -116,54 +116,17 @@ def evaluate(model, dataloader, args, log_prefix='val'):
     result_acc = (res_pred_all == res_all).mean()
     metrics['result_acc/avg'] = result_acc
 
-    # print("result accuracy by length:")
-    for k in sorted(dataloader.dataset.len2ids.keys()):
-        ids = dataloader.dataset.len2ids[k]
-        res = res_all[ids]
-        res_pred = res_pred_all[ids]
-        res_acc = (res == res_pred).mean()
-        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
-        metrics[f'result_acc/length/{k}'] = res_acc
-
-    # print("result accuracy by symbol:")
-    for k in sorted(dataloader.dataset.sym2ids.keys()):
-        ids = dataloader.dataset.sym2ids[k]
-        res = res_all[ids]
-        res_pred = res_pred_all[ids]
-        res_acc = (res == res_pred).mean()
-        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
-        k = 'div' if k == '/' else k
-        metrics[f'result_acc/symbol/{k}'] = res_acc
-
-    # print("result accuracy by digit:")
-    for k in sorted(dataloader.dataset.digit2ids.keys()):
-        ids = dataloader.dataset.digit2ids[k]
-        res = res_all[ids]
-        res_pred = res_pred_all[ids]
-        res_acc = (res == res_pred).mean()
-        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
-        metrics[f'result_acc/digit/{k}'] = res_acc
-
-    # print("result accuracy by result:")
-    for k in sorted(dataloader.dataset.res2ids.keys())[:10]:
-        ids = dataloader.dataset.res2ids[k]
-        res = res_all[ids]
-        res_pred = res_pred_all[ids]
-        res_acc = (res == res_pred).mean()
-        # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
-        metrics[f'result_acc/result/{k}'] = res_acc
-
-    # print("result accuracy by generalization:")
-    for k in sorted(dataloader.dataset.cond2ids.keys()):
-        ids = dataloader.dataset.cond2ids[k]
-        res = res_all[ids]
-        res_pred = res_pred_all[ids]
-        if len(ids) == 0:
-            res_acc = 0.
-        else:
-            res_acc = (res == res_pred).mean()
-        # print(k, "(%.2f%%)"%(100*len(ids)/len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
-        metrics[f'result_acc/generalization/{k}'] = res_acc
+    tracked_attrs = ['length', 'symbol', 'digit', 'result', 'eval', 'tree_depth', 'ps_depth']
+    for attr in tracked_attrs:
+        # print(f"result accuracy by {attr}:")
+        attr2ids = getattr(dataloader.dataset, f'{attr}2ids')
+        for k, ids in sorted(attr2ids.items()):
+            res = res_all[ids]
+            res_pred = res_pred_all[ids]
+            res_acc = (res == res_pred).mean() if ids else 0.
+            k = 'div' if k == '/' else k
+            metrics[f'result_acc/{attr}/{k}'] = res_acc
+            # print(k, "(%2d%%)"%(100*len(ids)//len(dataloader.dataset)), "%5.2f"%(100 * res_acc))
 
     wandb.log({f'{log_prefix}/{k}': v for k, v in metrics.items()})
     

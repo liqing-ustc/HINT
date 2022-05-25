@@ -7,6 +7,8 @@ metric:
 parameters:
   iterations:
     value: 10000
+  iterations_eval:
+    value: 1000
   dropout:
     value: 0.1
   input:

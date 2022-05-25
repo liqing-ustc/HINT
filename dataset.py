@@ -34,47 +34,165 @@ class HINT(Dataset):
         self.img_transform = IMG_TRANSFORM
         self.valid_ids = list(range(len(self.dataset)))
 
-        # dataset statistics, used to filter samples
-        len2ids = {}
-        for i, x in enumerate(self.dataset):
-            l = len(x['img_paths'])
-            if l not in len2ids:
-                len2ids[l] = []
-            len2ids[l].append(i)
-        self.len2ids = len2ids
 
-        sym2ids = {}
-        for i, x in enumerate(self.dataset):
-            for s in list(set(x['expr'])):
-                if s not in sym2ids:
-                    sym2ids[s] = []
-                sym2ids[s].append(i)
-        self.sym2ids = sym2ids
+    @property
+    def ps_depth2ids(self):
+        """parenthesis depth."""
+        if hasattr(self, '_ps_depth2ids'):
+            return self._ps_depth2ids
+        else:
+            lps = '('
+            rps = ')'
+            def compute_ps_depth(expr):
+                depth = 0
+                max_depth = 0
+                for x in expr:
+                    if x == lps:
+                        c = 1
+                    elif x == rps:
+                        c = -1
+                    else:
+                        c = 0
+                    depth += c
+                    if depth > max_depth:
+                        max_depth = depth
+                return max_depth
 
-        res2ids = {}
-        for i, x in enumerate(self.dataset):
-            l = x['res']
-            if l not in res2ids:
-                res2ids[l] = []
-            res2ids[l].append(i)
-        self.res2ids = res2ids
+            def sample2key(sample):
+                return compute_ps_depth(sample['expr'])
 
-        digit2ids = {}
-        for i, x in enumerate(self.dataset):
-            if len(x['expr']) == 1:
-                s = x['expr'][0]
-                if s not in digit2ids:
-                    digit2ids[s] = []
-                digit2ids[s].append(i)
-        self.digit2ids = digit2ids
-
-        if split in ['val', 'test']:
-            cond2ids = {}
+            mapping = {}
             for i, x in enumerate(self.dataset):
-                if x['eval'] not in cond2ids:
-                    cond2ids[x['eval']] = []
-                cond2ids[x['eval']].append(i)
-            self.cond2ids = cond2ids
+                k = sample2key(x)
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._ps_depth2ids = mapping
+            return mapping
+
+
+    @property
+    def tree_depth2ids(self):
+        if hasattr(self, '_tree_depth2ids'):
+            return self._tree_depth2ids
+        else:
+            from functools import lru_cache
+            def compute_tree_depth(head):
+                @lru_cache
+                def depth(i):
+                    """The depth of node i."""
+                    if head[i] == -1:
+                        return 1
+                    return depth(head[i]) + 1
+                
+                return max(depth(i) for i in range(len(head)))
+
+            def sample2key(sample):
+                return compute_tree_depth(sample['head'])
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k = sample2key(x)
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._tree_depth2ids = mapping
+            return mapping
+    
+    @property
+    def eval2ids(self):
+        if hasattr(self, '_eval2ids'):
+            return self._eval2ids
+        else:
+            def sample2key(sample):
+                return sample['eval']
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k = sample2key(x)
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._eval2ids = mapping
+            return mapping
+
+    @property
+    def digit2ids(self):
+        if hasattr(self, '_digit2ids'):
+            return self._digit2ids
+        else:
+            def sample2key(sample):
+                if len(sample['expr']) == 1:
+                    return sample['expr'][0]
+                return None
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k = sample2key(x)
+                if not k:
+                    continue
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._digit2ids = mapping
+            return mapping
+
+    @property
+    def result2ids(self):
+        if hasattr(self, '_result2ids'):
+            return self._result2ids
+        else:
+            def sample2key(sample):
+                r = sample['res']
+                if r < 10:
+                    return r
+                r = (r // 10) * 10
+                r = min(r, 100)
+                return r
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k = sample2key(x)
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._result2ids = mapping
+            return mapping
+
+    @property
+    def length2ids(self):
+        if hasattr(self, '_length2ids'):
+            return self._length2ids
+        else:
+            def sample2key(sample):
+                return len(sample['img_paths'])
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k = sample2key(x)
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._length2ids = mapping
+            return mapping
+
+    @property
+    def symbol2ids(self):
+        if hasattr(self, '_symbol2ids'):
+            return self._symbol2ids
+        else:
+            def sample2key(sample):
+                return list(set(sample['expr']))
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k_list = sample2key(x)
+                for k in k_list:
+                    if k not in mapping:
+                        mapping[k] = []
+                    mapping[k].append(i)
+            self._symbol2ids = mapping
+            return mapping
 
     def __getitem__(self, index):
         index = self.valid_ids[index]
@@ -95,7 +213,6 @@ class HINT(Dataset):
         sentence = [SYM2ID(sym) for sym in sample['expr']]
         sample['sentence'] = sentence
         return sample
-            
     
     def __len__(self):
         return len(self.valid_ids)
@@ -105,11 +222,6 @@ class HINT(Dataset):
         if max_len is None: max_len = float('inf')
         self.valid_ids = [i for i, x in enumerate(self.dataset) if x['len'] <= max_len and x['len'] >= min_len]
     
-    def filter_by_eval(self, eval_idx=None):
-        if eval_idx is None:
-            self.valid_ids = list(range(len(self.dataset)))
-        else:
-            self.valid_ids = self.cond2ids[eval_idx]
 
     def all_symbols(self, max_len=float('inf')):
         dataset = [sample for sample in self.dataset if len(sample['expr']) <= max_len]

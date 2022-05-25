@@ -47,7 +47,6 @@ for agent in range(args.n_agent):
 	print(f'Running Agent {agent} on GPU {gpu}, logging to {log_file}.')
 	p = subprocess.Popen(f'CUDA_VISIBLE_DEVICES={gpu} exec {run_agent} >{log_file} 2>&1', shell=True)
 	active_agents.append((agent, p))
-	print(p.pid)
 
 
 def kill(proc_pid):
