@@ -13,7 +13,7 @@ parameters:
     # values: [relative_universal, relative, opennmt]
     value: relative_universal
   result_encoding:
-    value: sin
+    value: decimal
     # values: [decimal, sin, binary]
   batch_size:
     value: 128

@@ -8,18 +8,19 @@ parameters:
   input:
     value: symbol
   result_encoding:
-    # value: sin
-    values: [sin, decimal, binary]
+    value: decimal
+    # values: [sin, decimal, binary]
   seq2seq:
-    value: LSTM
+    # value: LSTM
+    values: [LSTM, GRU]
   batch_size:
     value: 128
   iterations:
-    value: 10000
+    value: 100000
   iterations_eval:
     value: 1000
   dropout:
-    value: 0.5
+    value: 0.1
     # values: [0.1, 0.5]
   lr:
     value: 0.001
