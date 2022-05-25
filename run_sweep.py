@@ -4,6 +4,9 @@ import re
 import os
 import time
 import sys
+import psutil
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('yaml', type=str, help='the yaml file for sweep.')
@@ -41,8 +44,17 @@ for agent in range(args.n_agent):
 	gpu = args.gpus[agent % len(args.gpus)]
 	log_file = os.path.join(args.log_dir, f'agent_{agent}.log')
 	print(f'Running Agent {agent} on GPU {gpu}, logging to {log_file}.')
-	p = subprocess.Popen(f'CUDA_VISIBLE_DEVICES={gpu} {run_agent} >{log_file} 2>&1', shell=True)
+	p = subprocess.Popen(f'CUDA_VISIBLE_DEVICES={gpu} exec {run_agent} >{log_file} 2>&1', shell=True)
 	active_agents.append((agent, p))
+	print(p.pid)
+
+
+def kill(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
+
 
 try:
 	print('Waiting all agents to finish...')
@@ -62,8 +74,7 @@ try:
 	print('All agents finished.')
 
 except KeyboardInterrupt:
-	print("Killing all active agents...")
+	print("\nKilling all active agents...")
 	for agent, p in active_agents:
-		p.kill()
-	print("Finished.")
+		kill(p.pid)
 	sys.exit(0)
