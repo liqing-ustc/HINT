@@ -33,5 +33,5 @@ parameters:
     value: 3
     # values: [3, 6, 9]
   hid_dim:
-    value: 256
+    value: 512
     # values: [128, 256, 512]
