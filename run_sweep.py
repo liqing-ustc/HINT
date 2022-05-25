@@ -70,7 +70,7 @@ try:
 			print(f'Agent finished: {[active_agents[i][0] for i in finished]}, ', end='')
 			for i in sorted(finished, reverse=True):
 				del active_agents[i]
-			print(f'Remains: {[x[0] for x in active_agents]}.')
+			print(f'remains: {[x[0] for x in active_agents]}.')
 
 	print('All agents finished.')
 
