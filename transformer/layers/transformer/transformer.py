@@ -143,7 +143,7 @@ class Transformer(torch.nn.Module):
     def __init__(self, d_model: int = 512, nhead: int = 8, num_encoder_layers: int = 6,
                  num_decoder_layers: int = 6, dim_feedforward: int = 2048, dropout: float = 0.1,
                  activation: ActivationFunction = F.relu, encoder_layer=TransformerEncoderWithLayer(),
-                 decoder_layer=TransformerDecoderWithLayer()):
+                 decoder_layer=TransformerDecoderWithLayer(), **kwargs):
         super().__init__()
 
         self.encoder = encoder_layer(num_encoder_layers, d_model, nhead, dim_feedforward,

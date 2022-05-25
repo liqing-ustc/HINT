@@ -3,7 +3,7 @@ sys.path.append("./transformer/")
 
 import torch.nn
 from layers.transformer import Transformer, UniversalTransformer, RelativeTransformer, UniversalRelativeTransformer
-from models import TransformerEncDecModel
+from models import TransformerEncDecModel, BertModel
 
 def create_model(config) -> torch.nn.Module:
 	rel_args = dict(pos_embeddig=(lambda x, offset: x), embedding_init="xavier")
@@ -19,16 +19,19 @@ def create_model(config) -> torch.nn.Module:
 	}
 
 	constructor, args = trafos[config.transformer]
+	model_class = BertModel if config.result_encoding == 'sin' else TransformerEncDecModel
 
-	return TransformerEncDecModel(config.in_vocab_size, config.out_vocab_size, config.hid_dim,
-									num_encoder_layers=config.enc_layers,
-									num_decoder_layers=config.dec_layers,
-									transformer=constructor,
-									decoder_sos=config.decoder_sos,
-									decoder_eos=config.decoder_eos,
-									in_embedding_size=config.emb_dim,
-									out_embedding_size=config.emb_dim,
-									nhead=config.nhead,
-									dropout=config.dropout,
-									pos_emb_type=config.pos_emb_type,
-									**args)
+	return model_class(n_input_tokens=config.in_vocab_size, 
+						n_out_tokens=config.out_vocab_size, 
+						state_size=config.hid_dim,
+						num_encoder_layers=config.enc_layers,
+						num_decoder_layers=config.dec_layers,
+						transformer=constructor,
+						decoder_sos=config.decoder_sos,
+						decoder_eos=config.decoder_eos,
+						in_embedding_size=config.emb_dim,
+						out_embedding_size=config.emb_dim,
+						nhead=config.nhead,
+						dropout=config.dropout,
+						pos_emb_type=config.pos_emb_type,
+						**args)
