@@ -10,7 +10,7 @@ parameters:
   result_encoding:
     value: decimal
     # values: [sin, decimal, binary]
-  seq2seq:
+  model:
     # value: LSTM
     values: [LSTM, GRU]
   batch_size:

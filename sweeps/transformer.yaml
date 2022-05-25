@@ -7,11 +7,9 @@ metric:
 parameters:
   input:
     value: symbol
-  seq2seq:
-    value: transformer
-  transformer:
-    values: [relative, opennmt]
-    # values: [relative_universal, relative, opennmt]
+  model:
+    # value: TRAN.relative_universal
+    values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal
     # values: [decimal, sin, binary]

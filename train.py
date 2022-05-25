@@ -30,12 +30,9 @@ def parse_args():
     parser.add_argument('--output-dir', type=str, default='outputs/', help='output directory for storing checkpoints')
     parser.add_argument('--seed', type=int, default=0, help="Random seed.")
 
-    parser.add_argument('--seq2seq', type=str, default='GRU', 
-            choices=['GRU', 'LSTM', 'ON', 'OM', 'transformer'],
-            help='the type of seq2seq: GRU, LSTM, transformer, ON for Ordered Neuron LSTM, OM for Ordered Memory.')
-    parser.add_argument('--transformer', type=str, default='opennmt', 
-            choices=['opennmt', 'relative', 'relative_universal'],
-            help='the variant of transformer, only effective when seq2seq=TRAN')
+    parser.add_argument('--model', type=str, default='GRU', 
+            choices=['GRU', 'LSTM', 'ON', 'OM', 'TRAN.opennmt', 'TRAN.relative', 'TRAN.relative_universal'],
+            help='the type of model: GRU, LSTM, TRAN for transformer, ON for Ordered Neuron LSTM, OM for Ordered Memory.')
     parser.add_argument('--nhead', type=int, default=1, help="number of attention heads in the Transformer model")
     parser.add_argument('--layers', type=int, default=1, help="number of layers for both encoder and decoder")
     parser.add_argument('--enc_layers', type=int, default=0, help="number of layers in encoder")

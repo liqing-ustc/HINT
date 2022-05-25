@@ -65,22 +65,21 @@ class NeuralArithmetic(nn.Module):
         config.decoder_eos = config.res_enc.end_idx
 
         config.embedding_init = 'pytorch'
-        if config.seq2seq == 'transformer':
-            if 'scaledinit' in config.transformer:
-                config.embedding_init = 'kaiming'
-            elif 'opennmt' in config.transformer:
-                config.embedding_init = 'xavier'
+        if 'scaledinit' in config.model:
+            config.embedding_init = 'kaiming'
+        elif 'opennmt' in config.model:
+            config.embedding_init = 'xavier'
 
         self.embedding_in = EmbeddingIn(config)
-        if config.seq2seq in ['GRU', 'LSTM', 'ON', 'OM']:
-            self.seq2seq = RNNModel(config)
+        if config.model in ['GRU', 'LSTM', 'ON', 'OM']:
+            self.model = RNNModel(config)
         else:
             import transformer
-            self.seq2seq = transformer.create_model(config)
+            self.model = transformer.create_model(config)
     
     def forward(self, src, tgt, src_len):
         src, src_len = self.embedding_in(src, src_len)
-        output = self.seq2seq(src, src_len, tgt)
+        output = self.model(src, src_len, tgt)
         return output
 
 def make_model(config):

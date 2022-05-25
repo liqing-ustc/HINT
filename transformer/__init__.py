@@ -18,7 +18,7 @@ def create_model(config) -> torch.nn.Module:
 		"relative_universal": (UniversalRelativeTransformer, rel_args)
 	}
 
-	constructor, args = trafos[config.transformer]
+	constructor, args = trafos[config.model.replace('TRAN.', '')]
 	model_class = BertModel if config.result_encoding == 'sin' else TransformerEncDecModel
 
 	return model_class(n_input_tokens=config.in_vocab_size, 

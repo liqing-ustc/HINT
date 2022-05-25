@@ -37,38 +37,38 @@ class RNNModel(nn.Module):
 		dropout = config.dropout
 
 		# encoder
-		if config.seq2seq == 'LSTM':
+		if config.model == 'LSTM':
 			self.encoder = nn.LSTM(emb_dim, hid_dim, enc_layers, dropout=dropout, bidirectional=True)
-		elif config.seq2seq == 'GRU':
+		elif config.model == 'GRU':
 			self.encoder = nn.GRU(emb_dim, hid_dim, enc_layers, dropout=dropout, bidirectional=True)
-		elif config.seq2seq == 'ON':
+		elif config.model == 'ON':
 			self.encoder = ONLSTMStack([emb_dim] + [hid_dim] * enc_layers, chunk_size=8, dropconnect=dropout, dropout=dropout)
-		elif config.seq2seq == 'OM':
+		elif config.model == 'OM':
 			self.encoder = OrderedMemory(emb_dim, hid_dim, nslot=21, bidirection=False)
 		else:
 			pass
 
 		# decoder
-		dec_hid_dim = hid_dim * 2 if config.seq2seq in ['GRU', 'LSTM'] else hid_dim
+		dec_hid_dim = hid_dim * 2 if config.model in ['GRU', 'LSTM'] else hid_dim
 		if config.result_encoding == 'sin':
 			self.decoder = SinDecoder(inp_dim=dec_hid_dim, res_dim=emb_dim, feedforward_dims=[hid_dim], dropout=dropout)
 		else:
 
-			if config.seq2seq in ['LSTM', 'ON']:
+			if config.model in ['LSTM', 'ON']:
 				self.decoder = nn.LSTM(emb_dim, dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
-			elif config.seq2seq in ['GRU', 'OM']:
+			elif config.model in ['GRU', 'OM']:
 				self.decoder = nn.GRU(emb_dim, dec_hid_dim, dec_layers, dropout=dropout, bidirectional=False)
 
 			self.embedding_out = nn.Embedding(config.out_vocab_size, config.emb_dim)
 			self.classifier_out = nn.Linear(dec_hid_dim, config.out_vocab_size)
 
 	def encode(self, src, src_len):
-		if self.config.seq2seq == 'GRU':
+		if self.config.model == 'GRU':
 			_, hidden = self.encoder(src)
 			hidden = hidden.view(-1, 2, *hidden.shape[1:])[-1].transpose(0, 1)
 			hidden = hidden.contiguous().view(hidden.shape[0], -1)
 			hidden = torch.stack([hidden] * self.config.dec_layers)
-		elif self.config.seq2seq == 'LSTM':
+		elif self.config.model == 'LSTM':
 			_, (h, c) = self.encoder(src)
 			h = h.view(-1, 2, *h.shape[1:])[-1].transpose(0, 1)
 			h = h.contiguous().view(h.shape[0], -1)
@@ -80,7 +80,7 @@ class RNNModel(nn.Module):
 
 			hidden = (h, c)
 
-		elif self.config.seq2seq == 'ON':
+		elif self.config.model == 'ON':
 			h, c = self.encoder(src)[1][-1]
 			h = torch.stack([h] * self.config.dec_layers)
 
@@ -89,7 +89,7 @@ class RNNModel(nn.Module):
 
 			hidden = (h, c)
 
-		elif self.config.seq2seq == 'OM':
+		elif self.config.model == 'OM':
 			mask = torch.from_numpy(create_padding_mask(src_len)).to(src.device).transpose(0,1).contiguous()
 			h = self.encoder(src, mask, output_last=True)
 			h = torch.stack([h] * self.config.dec_layers)

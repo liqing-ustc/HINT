@@ -7,13 +7,11 @@ metric:
 parameters:
   input:
     value: symbol
-  seq2seq:
-    value: transformer
-  transformer:
-    # values: [relative_universal, relative, opennmt]
-    value: relative_universal
+  model:
+    # value: TRAN.relative_universal
+    values: [LSTM, GRU, TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
-    value: sin
+    value: decimal
     # values: [decimal, sin, binary]
   batch_size:
     value: 128
@@ -21,7 +19,7 @@ parameters:
     value: 0.001
     # values: [0.0001, 0.00001]
   iterations:
-    value: 100000
+    value: 100
   iterations_eval:
     value: 100
   dropout:
