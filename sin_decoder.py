@@ -37,9 +37,9 @@ class SinDecoder(nn.Module):
 	def forward(self, input):
 		x = self.ffw(input)
 		# x = torch.matmul(F.normalize(x, dim=1), self.res_emb.t())
-		# x = torch.matmul(x, self.res_emb.t())
-		x = x.unsqueeze(1) - self.res_emb.unsqueeze(0)
-		x = -(x**2).mean(axis=-1)
+		x = torch.matmul(x, self.res_emb.t())
+		# x = x.unsqueeze(1) - self.res_emb.unsqueeze(0)
+		# x = -(x**2).mean(axis=-1)
 		return x
 
 
