@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import subprocess
 import re
@@ -5,7 +7,6 @@ import os
 import time
 import sys
 import psutil
-
 
 
 parser = argparse.ArgumentParser()
