@@ -14,7 +14,7 @@ parameters:
     # values: [sin, decimal, binary]
   model:
     # value: LSTM
-    values: [LSTM, GRU]
+    values: [LSTM_attn, GRU_attn, LSTM, GRU]
   batch_size:
     value: 128
   iterations:
