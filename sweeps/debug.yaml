@@ -9,10 +9,10 @@ parameters:
     value: symbol
   model:
     # value: TRAN.relative_universal
-    values: [LSTM, GRU, TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+    values: [LSTM, GRU, LSTM_attn, GRU_attn, TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
-    value: decimal
-    # values: [decimal, sin, binary]
+    # value: decimal
+    values: [decimal, sin, binary]
   batch_size:
     value: 128
   lr:

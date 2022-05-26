@@ -71,11 +71,11 @@ class NeuralArithmetic(nn.Module):
             config.embedding_init = 'xavier'
 
         self.embedding_in = EmbeddingIn(config)
-        if config.model in ['GRU', 'LSTM', 'ON', 'OM']:
-            self.model = RNNModel(config)
-        else:
+        if config.model.startswith('TRAN.'):
             import transformer
             self.model = transformer.create_model(config)
+        else:
+            self.model = RNNModel(config)
     
     def forward(self, src, tgt, src_len):
         src, src_len = self.embedding_in(src, src_len)

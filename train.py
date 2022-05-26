@@ -30,8 +30,8 @@ def parse_args():
     parser.add_argument('--output-dir', type=str, default='outputs/', help='output directory for storing checkpoints')
     parser.add_argument('--seed', type=int, default=0, help="Random seed.")
 
-    parser.add_argument('--model', type=str, default='GRU', 
-            choices=['GRU', 'LSTM', 'ON', 'OM', 'TRAN.opennmt', 'TRAN.relative', 'TRAN.relative_universal'],
+    parser.add_argument('--model', type=str, default='LSTM', 
+            choices=['LSTM', 'LSTM_attn', 'GRU', 'GRU_attn', 'ON', 'OM', 'TRAN.opennmt', 'TRAN.relative', 'TRAN.relative_universal'],
             help='the type of model: GRU, LSTM, TRAN for transformer, ON for Ordered Neuron LSTM, OM for Ordered Memory.')
     parser.add_argument('--nhead', type=int, default=1, help="number of attention heads in the Transformer model")
     parser.add_argument('--layers', type=int, default=1, help="number of layers for both encoder and decoder")
