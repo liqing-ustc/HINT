@@ -137,6 +137,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
 
 def train(model, args, st_iter=0):
     best_acc = 0.0
+    stop_tolerance, stop_counter = 5, 0 # stop training if the model doesn't improve for x evaluations.
     batch_size = args.batch_size
     train_dataloader = torch.utils.data.DataLoader(args.train_set, batch_size=batch_size,
                          shuffle=True, num_workers=4, collate_fn=HINT_collate)
@@ -211,13 +212,19 @@ def train(model, args, st_iter=0):
         if ((step+1) % args.iterations_eval == 0) or (step+1 == args.iterations):
             perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
             print('Iter {}: {} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format(step+1, 'val', 100*perception_acc, 100*head_acc, 100*result_acc))
-            if result_acc > best_acc:
-                best_acc = result_acc
-
             if args.save_model == 'yes':
                 model_path = os.path.join(args.ckpt_dir, f'model_{step+1}.p')
                 torch.save({'step': step+1, 'model_state_dict': model.state_dict()}, model_path)
             model.train()
+
+            if result_acc > best_acc:
+                best_acc = result_acc
+                stop_counter = 0
+            else:
+                stop_counter += 1
+                if stop_counter == stop_tolerance:
+                    print(f'Stop training because model does not improve for {stop_counter} evaluations.')
+                    break
 
     # Test
     print('-' * 30)
