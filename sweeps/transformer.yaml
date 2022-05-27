@@ -24,6 +24,8 @@ parameters:
     value: 100000
   iterations_eval:
     value: 1000
+  early_stop:
+    value: 50
   dropout:
     value: 0.1
   nhead:
@@ -33,8 +35,8 @@ parameters:
     # value: 6
     # values: [3, 6, 9]
   enc_layers:
-    values: [12, 9, 6]
-    # value: 9
+    value: 6
+    # values: [3, 6, 9, 12]
   dec_layers:
     value: 1
     # values: [1, 3, 6]
@@ -43,3 +45,5 @@ parameters:
     # values: [128, 256, 512]
   max_rel_pos:
     value: 15
+  seed:
+    values: [0,1,2]
