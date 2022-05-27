@@ -29,12 +29,15 @@ parameters:
   nhead:
     value: 8
     # values: [4, 8]
-  layers:
-    value: 6
+  # layers:
+    # value: 6
     # values: [3, 6, 9]
+  enc_layers:
+    value: 6
+  dec_layers:
+    values: [1, 3, 6]
   hid_dim:
     value: 512
     # values: [128, 256, 512]
   max_rel_pos:
-    # value: 15
-    values: [5, 30]
+    value: 15
