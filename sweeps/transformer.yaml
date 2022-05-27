@@ -35,3 +35,6 @@ parameters:
   hid_dim:
     value: 512
     # values: [128, 256, 512]
+  max_rel_pos:
+    # value: 15
+    values: [5, 30]
