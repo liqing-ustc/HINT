@@ -10,9 +10,9 @@ from .transformer import Transformer, TransformerEncoderWithLayer, TransformerDe
 
 
 class RelativeTransformerEncoderLayer(torch.nn.Module):
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu):
+    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu, max_rel_pos=None, **kwargs):
         super().__init__()
-        self.self_attn = FixedRelativeMultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = FixedRelativeMultiheadAttention(d_model, nhead, dropout=dropout, max_rel_pos=max_rel_pos)
         self.linear1 = torch.nn.Linear(d_model, dim_feedforward)
         self.dropout = torch.nn.Dropout(dropout)
         self.linear2 = torch.nn.Linear(dim_feedforward, d_model)
@@ -41,10 +41,10 @@ class RelativeTransformerEncoderLayer(torch.nn.Module):
 
 
 class RelativeTransformerDecoderLayer(torch.nn.Module):
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu):
+    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu, max_rel_pos=None, **kwargs):
         super().__init__()
 
-        self.self_attn = FixedRelativeMultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = FixedRelativeMultiheadAttention(d_model, nhead, dropout=dropout, max_rel_pos=max_rel_pos)
         self.multihead_attn = MultiHeadAttention(d_model, nhead, dropout=dropout)
         # Implementation of Feedforward model
         self.linear1 = torch.nn.Linear(d_model, dim_feedforward)
@@ -90,4 +90,4 @@ class RelativeTransformer(Transformer):
 
         super().__init__(d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, dropout, activation,
                          TransformerEncoderWithLayer(RelativeTransformerEncoderLayer),
-                         TransformerDecoderWithLayer(RelativeTransformerDecoderLayer))
+                         TransformerDecoderWithLayer(RelativeTransformerDecoderLayer), **kwargs)

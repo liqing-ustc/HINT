@@ -10,8 +10,8 @@ parameters:
   save_model:
     value: True
   model:
-    # value: TRAN.relative_universal
-    values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+    value: TRAN.relative_universal
+    # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal
     # values: [decimal, sin, binary]

@@ -50,7 +50,7 @@ class RelativeAttentionBase(MultiHeadAttentionBase):
 
 class FixedRelativeMultiheadAttention(RelativeAttentionBase):
     def __init__(self, state_size: int, n_heads: int, dropout: float = 0.0, global_pos_bias: bool = True,
-                 global_content_bias: bool = True, input_size: Optional[int] = None):
+                 global_content_bias: bool = True, input_size: Optional[int] = None, max_rel_pos = None):
         super().__init__(state_size, n_heads, dropout)
 
         self.data_to_kv = torch.nn.Linear(state_size, 2 * n_heads * self.projection_size, bias=False)
@@ -63,11 +63,12 @@ class FixedRelativeMultiheadAttention(RelativeAttentionBase):
                                if global_pos_bias else None
 
         self.pos_to_pq = torch.nn.Linear(state_size, self.n_heads * self.projection_size, bias=False)
+        self.max_rel_pos = max_rel_pos
         self.register_buffer("pos_encoding", self._create_buffer(1000))
 
     def _create_buffer(self, max_len: int):
         return framework.layers.sinusoidal_pos_embedding(self.state_size, 2 * max_len - 1, -max_len + 1,
-                                                         device=self.data_to_q.weight.device)
+                                        device=self.data_to_q.weight.device, max_allowed=self.max_rel_pos)
 
     def get_pos(self, l: int, offset: int) -> torch.Tensor:
         if self.pos_encoding.shape[0] < 2 * (l + offset) - 1:

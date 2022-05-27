@@ -6,7 +6,7 @@ from layers.transformer import Transformer, UniversalTransformer, RelativeTransf
 from models import TransformerEncDecModel, BertModel
 
 def create_model(config) -> torch.nn.Module:
-	rel_args = dict(pos_embeddig=(lambda x, offset: x), embedding_init="xavier")
+	rel_args = dict(pos_embeddig=(lambda x, offset: x), embedding_init="xavier", max_rel_pos=config.max_rel_pos)
 	trafos = {
 		"scaledinit": (Transformer, dict(embedding_init="kaiming", scale_mode="down")),
 		"opennmt": (Transformer, dict(embedding_init="xavier", scale_mode="opennmt")),

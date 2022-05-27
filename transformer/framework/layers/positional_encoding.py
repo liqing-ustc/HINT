@@ -2,12 +2,17 @@ import torch
 import torch.nn
 import math
 from typing import Optional
-
+import numpy as np
 
 def sinusoidal_pos_embedding(d_model: int, max_len: int = 5000, pos_offset: int = 0,
-                             device: Optional[torch.device] = None):
+                             device: Optional[torch.device] = None, max_allowed=None):
     pe = torch.zeros(max_len, d_model, device=device)
-    position = torch.arange(0, max_len, dtype=torch.float, device=device).unsqueeze(1) + pos_offset
+    position = np.expand_dims(np.arange(0, max_len), 1) + pos_offset
+    if max_allowed:
+        cap_position = np.minimum(np.abs(position), max_allowed)
+        cap_position[position < 0] *= -1
+        position = cap_position
+    position = torch.tensor(position, dtype=torch.float, device=device)
     div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float, device=device) * (-math.log(10000.0) / d_model))
     pe[:, 0::2] = torch.sin(position * div_term)
     pe[:, 1::2] = torch.cos(position * div_term)

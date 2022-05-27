@@ -10,7 +10,7 @@ ActivationFunction = Callable[[torch.Tensor], torch.Tensor]
 
 
 class TransformerEncoderLayer(torch.nn.Module):
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu):
+    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu, **kwargs):
         super(TransformerEncoderLayer, self).__init__()
         self.self_attn = MultiHeadAttention(d_model, nhead, dropout=dropout)
         self.linear1 = torch.nn.Linear(d_model, dim_feedforward)
@@ -41,7 +41,7 @@ class TransformerEncoderLayer(torch.nn.Module):
 
 
 class TransformerDecoderLayer(torch.nn.Module):
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu):
+    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1, activation: ActivationFunction = F.relu, **kwargs):
         super(TransformerDecoderLayer, self).__init__()
 
         self.self_attn = MultiHeadAttention(d_model, nhead, dropout=dropout)
@@ -147,9 +147,9 @@ class Transformer(torch.nn.Module):
         super().__init__()
 
         self.encoder = encoder_layer(num_encoder_layers, d_model, nhead, dim_feedforward,
-                                     dropout, activation)
+                                     dropout, activation, **kwargs)
         self.decoder = decoder_layer(num_decoder_layers, d_model, nhead, dim_feedforward,
-                                     dropout, activation)
+                                     dropout, activation, **kwargs)
 
     def forward(self, src: torch.Tensor, tgt: torch.Tensor, tgt_mask: Optional[torch.Tensor] = None,
                 src_length_mask: Optional[torch.Tensor] = None):
