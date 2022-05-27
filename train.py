@@ -137,7 +137,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
 
 def train(model, args, st_iter=0):
     best_acc = 0.0
-    stop_tolerance, stop_counter = 5, 0 # stop training if the model doesn't improve for x evaluations.
+    stop_tolerance, stop_counter = 10, 0 # stop training if the model doesn't improve for x evaluations.
     batch_size = args.batch_size
     train_dataloader = torch.utils.data.DataLoader(args.train_set, batch_size=batch_size,
                          shuffle=True, num_workers=4, collate_fn=HINT_collate)
