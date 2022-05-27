@@ -33,7 +33,7 @@ parameters:
     # value: 6
     # values: [3, 6, 9]
   enc_layers:
-    value: [3, 6, 9]
+    values: [3, 6, 9]
   dec_layers:
     values: [1, 3, 6]
   hid_dim:
