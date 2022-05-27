@@ -57,6 +57,7 @@ def parse_args():
     parser.add_argument('--grad_clip', type=float, default=5.0)
     parser.add_argument('--iterations', type=int, default=None, help='number of iterations for training')
     parser.add_argument('--iterations_eval', type=int, default=None, help='how many iterations per evaluation')
+    parser.add_argument('--early_stop', type=int, default=None, help='stop training if the model does not improve for x evaluations.')
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs for training')
     parser.add_argument('--epochs_eval', type=int, default=1, help='how many epochs per evaluation')
     args = parser.parse_args()
@@ -137,7 +138,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
 
 def train(model, args, st_iter=0):
     best_acc = 0.0
-    stop_tolerance, stop_counter = 10, 0 # stop training if the model doesn't improve for x evaluations.
+    stop_counter = 0
     batch_size = args.batch_size
     train_dataloader = torch.utils.data.DataLoader(args.train_set, batch_size=batch_size,
                          shuffle=True, num_workers=4, collate_fn=HINT_collate)
@@ -222,7 +223,7 @@ def train(model, args, st_iter=0):
                 stop_counter = 0
             else:
                 stop_counter += 1
-                if stop_counter == stop_tolerance:
+                if args.early_stop and stop_counter == args.early_stop:
                     print(f'Stop training because model does not improve for {stop_counter} evaluations.')
                     break
 
