@@ -8,7 +8,7 @@ parameters:
   input:
     value: image
   perception_pretrain:
-    values: ""
+    value: ""
     # values: ["", "imagenet"]
   save_model:
     value: True
