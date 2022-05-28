@@ -1,0 +1,50 @@
+project: HINT_image
+program: train.py
+method: grid
+metric:
+  name: test/result_acc/avg
+  goal: maximize
+parameters:
+  input:
+    value: image
+  perception_pretrain:
+    values: ["", "imagenet"]
+  model:
+    value: TRAN.relative_universal
+    # values: [TRAN.relative, TRAN.opennmt]
+    # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+  result_encoding:
+    value: decimal
+    # values: [decimal, sin, binary]
+  batch_size:
+    value: 32
+  lr:
+    value: 0.0001
+    # values: [0.001, 0.0001, 0.00001]
+  iterations:
+    value: 100000
+  iterations_eval:
+    value: 1000
+  early_stop:
+    value: 50
+  dropout:
+    value: 0.1
+  nhead:
+    value: 8
+    # values: [4, 8]
+  # layers:
+    # value: 6
+    # values: [3, 6, 9]
+  enc_layers:
+    value: 6
+    # values: [3, 6, 9, 12]
+  dec_layers:
+    value: 1
+    # values: [1, 3, 6]
+  hid_dim:
+    value: 512
+    # values: [128, 256, 512]
+  max_rel_pos:
+    value: 15
+  # seed:
+    # values: [0,1,2]

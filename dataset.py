@@ -205,6 +205,7 @@ class HINT(Dataset):
                 img = pad_image(img, 60)
                 img = transforms.functional.resize(img, 40)
                 img = self.img_transform(img)
+                img = torch.cat([img, torch.zeros((2, *img.shape[1:]))])
                 img_seq.append(img)
             sample['img_seq'] = img_seq
         # del sample['img_paths']

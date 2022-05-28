@@ -25,8 +25,8 @@ def parse_args():
     parser = argparse.ArgumentParser('Give Me A HINT')
     parser.add_argument('--wandb', type=str, default='HINT', help='the project name for wandb.')
     parser.add_argument('--resume', type=str, default=None, help='Resumes training from checkpoint.')
-    parser.add_argument('--perception-pretrain', type=str, help='initialize the perception from pretrained models.',
-                        default='data/perception-pretrain/model.pth.tar_78.2_match')
+    parser.add_argument('--perception_pretrain', type=str, help='initialize the perception from pretrained models.',
+                        default='data/perception_pretrain/model.pth.tar_78.2_match')
     parser.add_argument('--output-dir', type=str, default='outputs/', help='output directory for storing checkpoints')
     parser.add_argument('--seed', type=int, default=0, help="Random seed.")
 
@@ -264,9 +264,6 @@ if __name__ == "__main__":
 
     model = make_model(args)
     model.to(DEVICE)
-
-    if args.perception_pretrain and args.input == 'image':
-        model.embedding_in.image_encoder.load_state_dict(torch.load(args.perception_pretrain))
 
     print(model)
     n_params = sum(p.numel() for p in model.parameters())

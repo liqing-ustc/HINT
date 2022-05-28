@@ -10,7 +10,7 @@ import math
 import time
 from tqdm import tqdm
 
-import resnet_scan
+import perception
 from utils import INP_VOCAB, DEVICE, START, NULL, END
 from rnn import RNNModel
 
@@ -21,7 +21,7 @@ class EmbeddingIn(nn.Module):
         self.image_input = config.input == 'image'
 
         if self.image_input:
-            self.image_encoder = resnet_scan.make_model(n_class=config.in_vocab_size - 3)
+            self.image_encoder = perception.make_model(config)
         self.n_token = config.in_vocab_size
         self.embedding = nn.Embedding(self.n_token, config.emb_dim)
         if config.embedding_init == "xavier":
@@ -31,9 +31,7 @@ class EmbeddingIn(nn.Module):
         
     def forward(self, src, src_len):
         if self.image_input:
-            logits = self.image_encoder(src)
-            probs = F.softmax(logits, dim=-1)
-            src = torch.matmul(probs, self.embedding.weight[:-3])
+            src = self.image_encoder(src)
         else:
             src = self.embedding(src)
 
