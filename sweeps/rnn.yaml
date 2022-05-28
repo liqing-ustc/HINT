@@ -13,8 +13,8 @@ parameters:
     value: decimal
     # values: [sin, decimal, binary]
   model:
-    value: LSTM
-    # values: [LSTM_attn, GRU_attn, LSTM, GRU]
+    # value: LSTM
+    values: [LSTM_attn, GRU_attn, LSTM, GRU]
   batch_size:
     value: 128
   iterations:
@@ -32,10 +32,13 @@ parameters:
   #   value: 3
   #   # values: [3, 6, 9]
   enc_layers:
-    values: [1, 3, 6]
+    value: 3
+    # values: [1, 3, 6]
   dec_layers:
     value: 1
     # values: [1, 3, 6]
   hid_dim:
     value: 512
     # values: [128, 256, 512]
+  seed:
+    values: [0,1,2]
