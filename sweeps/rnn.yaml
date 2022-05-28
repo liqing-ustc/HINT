@@ -22,7 +22,7 @@ parameters:
   iterations_eval:
     value: 1000
   early_stop:
-    value: 5
+    value: 10
   dropout:
     value: 0.1
     # values: [0.1, 0.5]
