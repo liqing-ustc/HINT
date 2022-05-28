@@ -10,7 +10,8 @@ parameters:
   save_model:
     value: True
   model:
-    value: TRAN.relative_universal
+    # value: TRAN.relative_universal
+    values: [TRAN.relative, TRAN.opennmt]
     # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal
@@ -25,7 +26,7 @@ parameters:
   iterations_eval:
     value: 1000
   early_stop:
-    value: 50
+    value: 100
   dropout:
     value: 0.1
   nhead:
