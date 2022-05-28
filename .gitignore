@@ -1,6 +1,6 @@
 data/symbol_images
 data/figures
-data/*.json
+data/*.json*
 data/perception-pretrain
 *__pycache__*
 .vscode/
