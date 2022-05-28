@@ -26,7 +26,7 @@ parameters:
   iterations_eval:
     value: 1000
   early_stop:
-    value: 100
+    value: 50
   dropout:
     value: 0.1
   nhead:
