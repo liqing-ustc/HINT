@@ -8,12 +8,12 @@ parameters:
   input:
     value: image
   perception_pretrain:
-    value: ""
+    value: "imagenet"
     # values: ["", "imagenet"]
   model:
-    # value: TRAN.relative_universal
+    value: TRAN.opennmt
     # values: [TRAN.relative, TRAN.opennmt]
-    values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+    # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal
     # values: [decimal, sin, binary]
