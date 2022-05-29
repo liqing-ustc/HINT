@@ -205,8 +205,7 @@ class HINT(Dataset):
             img = self.img_transform(img)
             img = torch.cat([img, torch.zeros((2, *img.shape[1:]))])
 
-            stride = IMG_SIZE // 2
-            img_seq = transform_img_seq(img, IMG_SIZE, stride)
+            img_seq = transform_img_seq(img, IMG_SIZE, IMG_SIZE)
             sample['img_seq'] = img_seq
             sample['len'] = len(img_seq)
         # del sample['img_paths']
