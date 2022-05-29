@@ -10,13 +10,18 @@ from torch.utils.data.dataloader import default_collate
 from torchvision import transforms
 
 class HINT(Dataset):
-    def __init__(self, split='train', input='image', exclude_symbols=None, max_len=None, numSamples=None, fewshot=-1):
+    def __init__(self, split='train', input='image', exclude_symbols=None, max_len=None, numSamples=None, fewshot=None):
         super(HINT, self).__init__()
         
         assert split in ['train', 'val', 'test']
         self.split = split
         self.input = input
-        self.dataset = json.load(open(ROOT_DIR + ('fewshot_%d_'%fewshot if fewshot !=-1 else '') + 'expr_%s.json'%split))
+        if fewshot:
+            dataset = json.load(open(ROOT_DIR + 'fewshot_dataset.json'))
+            dataset = dataset[fewshot]
+            self.dataset = dataset[split]
+        else:
+            self.dataset = json.load(open(ROOT_DIR + 'expr_%s.json'%split))
         if numSamples:
             random.shuffle(self.dataset)
             self.dataset = self.dataset[:numSamples]

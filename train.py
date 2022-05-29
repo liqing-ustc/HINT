@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--resume', type=str, default=None, help='Resumes training from checkpoint.')
     parser.add_argument('--perception_pretrain', type=str, help='initialize the perception from pretrained models.',
                         default='data/perception_pretrain/model.pth.tar_78.2_match')
-    parser.add_argument('--output-dir', type=str, default='outputs/', help='output directory for storing checkpoints')
+    parser.add_argument('--output_dir', type=str, default='outputs/', help='output directory for storing checkpoints')
     parser.add_argument('--seed', type=int, default=0, help="Random seed.")
 
     parser.add_argument('--model', type=str, default='LSTM', 
@@ -41,6 +41,7 @@ def parse_args():
     parser.add_argument('--hid_dim', type=int, default=128, help="hidden dim")
     parser.add_argument('--dropout', type=float, default=0.5, help="dropout ratio")
 
+    parser.add_argument('--fewshot', default=None, choices=list('xyabcd'), help='fewshot concept.')
     parser.add_argument('--input', default='image', choices=['image', 'symbol'], help='whether to provide perfect perception, i.e., no need to learn')
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
     parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
@@ -257,15 +258,17 @@ if __name__ == "__main__":
     # torch.set_deterministic(True)
 
     # train_set = HINT('train', numSamples=5000)
-    train_set = HINT('train', input=args.input)
-    val_set = HINT('val', input=args.input)
-    # test_set = HINT('val')
-    test_set = HINT('test', input=args.input)
+    train_set = HINT('train', input=args.input, fewshot=args.fewshot)
+    val_set = HINT('val', input=args.input, fewshot=args.fewshot)
+    test_set = HINT('test', input=args.input, fewshot=args.fewshot)
     print('train:', len(train_set), 'val:', len(val_set), 'test:', len(test_set))
     
     args.res_enc = ResultEncoding(args.result_encoding)
 
     model = make_model(args)
+    if args.resume:
+        ckpt = torch.load(args.resume)
+        model.load_state_dict(ckpt['model_state_dict'])
     model.to(DEVICE)
 
     print(model)

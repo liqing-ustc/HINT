@@ -7,7 +7,7 @@ NULL = '<NULL>'
 SYMBOLS = DIGITS + OPERATORS + PARENTHESES
 # SYM2ID = {v:i for i, v in enumerate(SYMBOLS)}
 # ID2SYM = {i:v for i, v in enumerate(SYMBOLS)}
-SYM2ID = lambda x: SYMBOLS.index(x)
+SYM2ID = lambda x: SYMBOLS.index(x) if x in SYMBOLS else None
 ID2SYM = lambda x: SYMBOLS[x]
 
 NULL_VALUE = -1
