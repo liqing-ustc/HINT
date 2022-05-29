@@ -25,4 +25,20 @@ def pad_image(img, desired_size, fill=0):
     new_img = ImageOps.expand(img, padding, fill)
     return new_img
 
+symbol_images_dir = ROOT_DIR + 'symbol_images/'
+def render_img(img_paths):
+    images = [Image.open(symbol_images_dir + x) for x in img_paths]
+    widths, heights = zip(*(i.size for i in images))
+
+    total_width = sum(widths)
+    max_height = max(heights)
+
+    new_im = Image.new('L', (total_width, max_height))
+
+    x_offset = 0
+    for im in images:
+        new_im.paste(im, (x_offset,0))
+        x_offset += im.size[0]
+    return new_im
+
 INP_VOCAB = SYMBOLS + [START, END, NULL]

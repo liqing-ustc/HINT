@@ -1,4 +1,4 @@
-from utils import SYM2ID, ROOT_DIR, IMG_DIR, NULL, IMG_TRANSFORM, pad_image, IMG_SIZE
+from utils import SYM2ID, ROOT_DIR, IMG_DIR, NULL, IMG_TRANSFORM, pad_image, IMG_SIZE, render_img
 from copy import deepcopy
 import random
 import json
@@ -198,8 +198,9 @@ class HINT(Dataset):
         index = self.valid_ids[index]
         sample = deepcopy(self.dataset[index])
         if self.input == 'image':
-            img_path = sample['expr_image']
-            img = Image.open(IMG_DIR+img_path).convert('L')
+            # img_path = sample['expr_image']
+            # img = Image.open(IMG_DIR+img_path).convert('L')
+            img = render_img(sample['img_paths'])
             img = ImageOps.invert(img)
             img = self.img_transform(img)
             img = torch.cat([img, torch.zeros((2, *img.shape[1:]))])
