@@ -19,9 +19,9 @@ parameters:
     # value: LSTM
     values: [LSTM_attn, GRU_attn, LSTM, GRU]
   batch_size:
-    value: 32
+    value: 128
   iterations:
-    value: 200000
+    value: 100000
   iterations_eval:
     value: 1000
   early_stop:
@@ -44,4 +44,4 @@ parameters:
     value: 512
     # values: [128, 256, 512]
   seed:
-    values: [1,2]
+    values: [0,1,2]

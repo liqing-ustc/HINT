@@ -227,6 +227,7 @@ def train(model, args, st_iter=0):
                     print(f'Stop training because model does not improve for {stop_counter} evaluations.')
                     break
 
+    wandb.log({'train_steps': step+1})
     # Test
     print('-' * 30)
     print('Evaluate on test set...')
