@@ -214,10 +214,6 @@ def train(model, args, st_iter=0):
         if ((step+1) % args.iterations_eval == 0) or (step+1 == args.iterations):
             perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)
             print('Iter {}: {} (Perception Acc={:.2f}, Head Acc={:.2f}, Result Acc={:.2f})'.format(step+1, 'val', 100*perception_acc, 100*head_acc, 100*result_acc))
-            if args.save_model:
-                model_path = os.path.join(args.ckpt_dir, f'model_{step+1}.p')
-                torch.save({'step': step+1, 'model_state_dict': model.state_dict()}, model_path)
-                print(f'Saving model to {model_path}.')
             model.train()
 
             if result_acc > best_acc:
@@ -230,6 +226,10 @@ def train(model, args, st_iter=0):
                     break
 
     wandb.log({'train_steps': step+1})
+    if args.save_model:
+        model_path = os.path.join(args.ckpt_dir, f'model_{step+1}.p')
+        torch.save({'step': step+1, 'model_state_dict': model.state_dict()}, model_path)
+        print(f'Save model to {model_path}.')
     # Test
     print('-' * 30)
     print('Evaluate on test set...')
