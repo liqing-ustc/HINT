@@ -1,7 +1,9 @@
 data/symbol_images
+data/expr_images
 data/figures
 data/*.json*
 data/perception_pretrain
+data/*.zip
 *__pycache__*
 .vscode/
 .ipynb_checkpoints/

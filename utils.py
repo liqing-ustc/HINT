@@ -6,12 +6,12 @@ np.set_printoptions(precision=2, suppress=True)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ROOT_DIR = './data/'
-IMG_DIR = ROOT_DIR + 'symbol_images/'
-IMG_SIZE = 32
+IMG_DIR = ROOT_DIR + 'expr_images/'
+IMG_SIZE = 32 # original image for each symbol is (45, 45)
 
 from torchvision import transforms
 IMG_TRANSFORM = transforms.Compose([
-                    transforms.CenterCrop(IMG_SIZE),
+                    transforms.Resize(IMG_SIZE),
                     transforms.ToTensor(),
                     # transforms.Lambda(lambda x: 1. - x),
                     # transforms.Normalize((0.5,), (1,))

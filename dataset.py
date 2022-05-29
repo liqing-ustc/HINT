@@ -1,4 +1,4 @@
-from utils import SYM2ID, ROOT_DIR, IMG_DIR, NULL, IMG_TRANSFORM, pad_image
+from utils import SYM2ID, ROOT_DIR, IMG_DIR, NULL, IMG_TRANSFORM, pad_image, IMG_SIZE
 from copy import deepcopy
 import random
 import json
@@ -198,16 +198,16 @@ class HINT(Dataset):
         index = self.valid_ids[index]
         sample = deepcopy(self.dataset[index])
         if self.input == 'image':
-            img_seq = []
-            for img_path in sample['img_paths']:
-                img = Image.open(IMG_DIR+img_path).convert('L')
-                img = ImageOps.invert(img)
-                img = pad_image(img, 60)
-                img = transforms.functional.resize(img, 40)
-                img = self.img_transform(img)
-                img = torch.cat([img, torch.zeros((2, *img.shape[1:]))])
-                img_seq.append(img)
+            img_path = sample['expr_image']
+            img = Image.open(IMG_DIR+img_path).convert('L')
+            img = ImageOps.invert(img)
+            img = self.img_transform(img)
+            img = torch.cat([img, torch.zeros((2, *img.shape[1:]))])
+
+            stride = IMG_SIZE // 2
+            img_seq = transform_img_seq(img, IMG_SIZE, stride)
             sample['img_seq'] = img_seq
+            sample['len'] = len(img_seq)
         # del sample['img_paths']
         sample['expr'] = ''.join(sample['expr'])
         
@@ -228,6 +228,17 @@ class HINT(Dataset):
         dataset = [sample for sample in self.dataset if len(sample['expr']) <= max_len]
         symbol_set = [(x,SYM2ID(y)) for sample in dataset for x, y in zip(sample['img_paths'], sample['expr'])]
         return sorted(list(symbol_set))
+
+def transform_img_seq(expr_img, window_size, stride):
+    slide_dim = 2
+    st = 0
+    img_seq = []
+    while st + window_size <= expr_img.shape[slide_dim]:
+        indices = torch.arange(st, st+window_size)
+        img = torch.index_select(expr_img, slide_dim, indices)
+        img_seq.append(img)
+        st += stride
+    return img_seq
 
 def HINT_collate(batch):
     img_seq_list = []

@@ -30,7 +30,7 @@ def render_img(img_paths):
     total_width = sum(widths)
     max_height = max(heights)
 
-    new_im = Image.new('RGB', (total_width, max_height))
+    new_im = Image.new('L', (total_width, max_height))
 
     x_offset = 0
     for im in images:
