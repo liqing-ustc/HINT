@@ -5,13 +5,13 @@ metric:
   name: test/result_acc/avg
   goal: maximize
 parameters:
+  save_model:
+    value: True
   input:
     value: image
   perception_pretrain:
     value: ""
     # values: ["", "imagenet"]
-  save_model:
-    value: True
   result_encoding:
     value: decimal
     # values: [sin, decimal, binary]
