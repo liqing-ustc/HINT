@@ -13,7 +13,7 @@ parameters:
   input:
     value: image
   resume:
-    value: ""
+    value: models/image.TRAN.relative_universal/model_100000.p
   perception_pretrain:
     value: ""
     # values: ["", "imagenet"]

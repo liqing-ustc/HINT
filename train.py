@@ -270,6 +270,7 @@ if __name__ == "__main__":
 
     model = make_model(args)
     if args.resume:
+        print('Load checkpoint from ' + args.resume)
         ckpt = torch.load(args.resume)
         model.load_state_dict(ckpt['model_state_dict'])
     model.to(DEVICE)
