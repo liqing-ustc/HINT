@@ -1,4 +1,5 @@
 from utils import SYM2ID, ROOT_DIR, IMG_DIR, NULL, IMG_TRANSFORM, pad_image, IMG_SIZE, render_img
+from utils import OPERATORS, FEWSHOT_OPERATORS
 from copy import deepcopy
 import random
 import json
@@ -9,35 +10,40 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms
 
+op_list =  OPERATORS + FEWSHOT_OPERATORS
+def expr2n_op(expr):
+    return len([1 for x in expr if x in op_list])
+
 class HINT(Dataset):
-    def __init__(self, split='train', input='image', exclude_symbols=None, max_len=None, numSamples=None, fewshot=None):
+    def __init__(self, split, input, fewshot=None, n_sample=None, max_op=None):
         super(HINT, self).__init__()
         
         assert split in ['train', 'val', 'test']
         self.split = split
         self.input = input
+
         if fewshot:
             dataset = json.load(open(ROOT_DIR + 'fewshot_dataset.json'))
             dataset = dataset[fewshot]
-            self.dataset = dataset[split]
+            dataset = dataset[split]
         else:
-            self.dataset = json.load(open(ROOT_DIR + 'expr_%s.json'%split))
-        if numSamples:
-            random.shuffle(self.dataset)
-            self.dataset = self.dataset[:numSamples]
-        
-        if exclude_symbols is not None:
-            exclude_symbols = set(exclude_symbols)
-            self.dataset = [x for x in self.dataset if len(set(x['expr']) & exclude_symbols) == 0]
+            dataset = json.load(open(ROOT_DIR + 'expr_%s.json'%split))
 
-        if max_len is not None:
-            self.dataset = [x for x in self.dataset if len(x['expr']) <= max_len]
+        if n_sample:
+            if n_sample <= 1: # it is percentage
+                n_sample = int(len(dataset) * n_sample)
+            random.shuffle(dataset)
+            dataset = dataset[:n_sample]
             
-        for x in self.dataset:
+        if max_op:
+            dataset = [x for x in dataset if expr2n_op(x['expr']) <= max_op]
+
+        for x in dataset:
             x['len'] = len(x['expr'])
         
+        self.dataset = dataset
         self.img_transform = IMG_TRANSFORM
-        self.valid_ids = list(range(len(self.dataset)))
+        self.valid_ids = list(range(len(dataset)))
 
 
     @property

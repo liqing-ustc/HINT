@@ -41,6 +41,8 @@ def parse_args():
     parser.add_argument('--hid_dim', type=int, default=128, help="hidden dim")
     parser.add_argument('--dropout', type=float, default=0.5, help="dropout ratio")
 
+    parser.add_argument('--train_size', type=float, default=None, help="what perceptage of train data is used.")
+    parser.add_argument('--max_op_train', type=int, default=None, help="The maximum number of ops in train.")
     parser.add_argument('--fewshot', default=None, choices=list('xyabcd'), help='fewshot concept.')
     parser.add_argument('--input', default='image', choices=['image', 'symbol'], help='whether to provide perfect perception, i.e., no need to learn')
     parser.add_argument('--curriculum', default='no', choices=['no', 'manual'], help='whether to use the pre-defined curriculum')
@@ -258,7 +260,8 @@ if __name__ == "__main__":
     # torch.set_deterministic(True)
 
     # train_set = HINT('train', numSamples=5000)
-    train_set = HINT('train', input=args.input, fewshot=args.fewshot)
+    train_set = HINT('train', input=args.input, fewshot=args.fewshot, 
+                    n_sample=args.train_size, max_op=args.max_op_train)
     val_set = HINT('val', input=args.input, fewshot=args.fewshot)
     test_set = HINT('test', input=args.input, fewshot=args.fewshot)
     print('train:', len(train_set), 'val:', len(val_set), 'test:', len(test_set))

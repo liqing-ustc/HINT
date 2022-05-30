@@ -10,6 +10,9 @@ SYMBOLS = DIGITS + OPERATORS + PARENTHESES
 SYM2ID = lambda x: SYMBOLS.index(x) if x in SYMBOLS else None
 ID2SYM = lambda x: SYMBOLS[x]
 
+FEWSHOT_OPERATORS = list('abcd')
+FEWSHOT_NUMBERS = list('xy')
+
 NULL_VALUE = -1
 
 import math
