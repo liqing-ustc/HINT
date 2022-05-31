@@ -8,8 +8,12 @@ parameters:
   save_model:
     value: True
   fewshot:
-    # value: 'x'
+    # value: 'a'
     values: ['x', 'y', 'a', 'b', 'c', 'd']
+  # max_op_train:
+  #   values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  main_dataset_ratio:
+    value: 0.5
   input:
     value: image
   resume:
@@ -54,5 +58,5 @@ parameters:
     # values: [128, 256, 512]
   max_rel_pos:
     value: 15
-  # seed:
-  #   values: [0,1,2]
+  seed:
+    values: [1,2]

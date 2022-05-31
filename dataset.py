@@ -15,7 +15,7 @@ def expr2n_op(expr):
     return len([1 for x in expr if x in op_list])
 
 class HINT(Dataset):
-    def __init__(self, split, input, fewshot=None, n_sample=None, max_op=None):
+    def __init__(self, split, input, fewshot=None, n_sample=None, max_op=None, main_dataset_ratio=0.):
         super(HINT, self).__init__()
         
         assert split in ['train', 'val', 'test']
@@ -26,6 +26,9 @@ class HINT(Dataset):
             dataset = json.load(open(ROOT_DIR + 'fewshot_dataset.json'))
             dataset = dataset[fewshot]
             dataset = dataset[split]
+            self.main_dataset_ratio = main_dataset_ratio
+            if split == 'train' and main_dataset_ratio > 0:
+                self.main_dataset = json.load(open(ROOT_DIR + 'expr_%s.json'%split))
         else:
             dataset = json.load(open(ROOT_DIR + 'expr_%s.json'%split))
 
@@ -34,9 +37,11 @@ class HINT(Dataset):
                 n_sample = int(len(dataset) * n_sample)
             random.shuffle(dataset)
             dataset = dataset[:n_sample]
+            print(f'{split}: randomly select {n_sample} samples.')
             
-        if max_op:
+        if isinstance(max_op, int):
             dataset = [x for x in dataset if expr2n_op(x['expr']) <= max_op]
+            print(f'{split}: filter {len(dataset)} samples with no more than {max_op} operators.')
 
         for x in dataset:
             x['len'] = len(x['expr'])
@@ -206,8 +211,13 @@ class HINT(Dataset):
             return mapping
 
     def __getitem__(self, index):
-        index = self.valid_ids[index]
-        sample = deepcopy(self.dataset[index])
+        if self.split == 'train' and random.random() < self.main_dataset_ratio:
+            # use sample from main dataset to avoid forgetting
+            sample = random.choice(self.main_dataset)
+            sample = deepcopy(sample)
+        else:
+            index = self.valid_ids[index]
+            sample = deepcopy(self.dataset[index])
         if self.input == 'image':
             # img_path = sample['expr_image']
             # img = Image.open(IMG_DIR+img_path).convert('L')
