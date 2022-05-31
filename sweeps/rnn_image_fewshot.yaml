@@ -1,0 +1,52 @@
+project: HINT_image_fewshot
+program: train.py
+method: grid
+metric:
+  name: test/result_acc/avg
+  goal: maximize
+parameters:
+  save_model:
+    value: True
+  fewshot:
+    # value: 'a'
+    values: ['x', 'y', 'a', 'b', 'c', 'd']
+  # max_op_train:
+  #   values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  main_dataset_ratio:
+    value: 0.5
+  input:
+    value: image
+  resume:
+    value: models/image.LSTM_attn/model_56000.p
+  perception_pretrain:
+    value: ""
+    # values: ["", "imagenet"]
+  model:
+    value: LSTM_attn
+  result_encoding:
+    value: decimal
+    # values: [decimal, sin, binary]
+  batch_size:
+    value: 128
+  lr:
+    value: 0.00001
+    # values: [0.001, 0.0001, 0.00001]
+  iterations:
+    value: 1000
+  iterations_eval:
+    value: 100
+  early_stop:
+    value: 50
+  dropout:
+    value: 0.1
+  # layers:
+    # value: 6
+    # values: [3, 6, 9]
+  enc_layers:
+    value: 3
+  dec_layers:
+    value: 1
+  hid_dim:
+    value: 512
+  seed:
+    values: [0,1,2]
