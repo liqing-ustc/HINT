@@ -21,6 +21,7 @@ class HINT(Dataset):
         assert split in ['train', 'val', 'test']
         self.split = split
         self.input = input
+        self.fewshot = fewshot
 
         if fewshot:
             dataset = json.load(open(ROOT_DIR + 'fewshot_dataset.json'))
@@ -211,7 +212,7 @@ class HINT(Dataset):
             return mapping
 
     def __getitem__(self, index):
-        if self.split == 'train' and random.random() < self.main_dataset_ratio:
+        if self.fewshot and self.split == 'train' and random.random() < self.main_dataset_ratio:
             # use sample from main dataset to avoid forgetting
             sample = random.choice(self.main_dataset)
             sample = deepcopy(sample)
