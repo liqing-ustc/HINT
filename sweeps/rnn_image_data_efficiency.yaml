@@ -45,5 +45,5 @@ parameters:
   hid_dim:
     value: 512
     # values: [128, 256, 512]
-  # seed:
-  #   values: [0,1,2]
+  seed:
+    values: [1,2]
