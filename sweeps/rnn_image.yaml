@@ -44,4 +44,4 @@ parameters:
     value: 512
     # values: [128, 256, 512]
   seed:
-    values: [0,1,2]
+    values: [3,4]

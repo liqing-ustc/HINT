@@ -50,4 +50,4 @@ parameters:
   max_rel_pos:
     value: 15
   seed:
-    values: [0,1,2]
+    values: [3,4]
