@@ -8,8 +8,8 @@ parameters:
   save_model:
     value: True
   fewshot:
-    # value: 'a'
-    values: ['x', 'y', 'a', 'b', 'c', 'd']
+    value: 'x'
+    # values: ['x', 'y', 'a', 'b', 'c', 'd']
   # max_op_train:
   #   values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   main_dataset_ratio:
@@ -29,7 +29,8 @@ parameters:
   batch_size:
     value: 128
   lr:
-    value: 0.00001
+    # value: 0.00001
+    values: [0.001, 0.0001]
     # values: [0.001, 0.0001, 0.00001]
   iterations:
     value: 1000
