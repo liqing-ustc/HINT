@@ -1,4 +1,4 @@
-project: HINT
+project: HINT_main_res_symbol
 program: train.py
 method: grid
 metric:
@@ -11,8 +11,8 @@ parameters:
     value: True
   model:
     # value: TRAN.relative_universal
-    values: [TRAN.relative, TRAN.opennmt]
-    # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+    # values: [TRAN.relative, TRAN.opennmt]
+    values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal
     # values: [decimal, sin, binary]
@@ -47,4 +47,4 @@ parameters:
   max_rel_pos:
     value: 15
   seed:
-    values: [0,1,2]
+    values: [3,4]
