@@ -51,6 +51,26 @@ class HINT(Dataset):
         self.img_transform = IMG_TRANSFORM
         self.valid_ids = list(range(len(dataset)))
 
+    @property
+    def max_dep2ids(self):
+        """max dependency distance."""
+        if hasattr(self, '_max_dep2ids'):
+            return self._max_dep2ids
+        else:
+            def compute_max_dep(heads):
+                return max([0] + [abs(i-h) for i, h in enumerate(heads) if h != -1])
+
+            def sample2key(sample):
+                return compute_max_dep(sample['head'])
+
+            mapping = {}
+            for i, x in enumerate(self.dataset):
+                k = sample2key(x)
+                if k not in mapping:
+                    mapping[k] = []
+                mapping[k].append(i)
+            self._max_dep2ids = mapping
+            return mapping
 
     @property
     def ps_depth2ids(self):
