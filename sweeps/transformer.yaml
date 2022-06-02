@@ -10,9 +10,9 @@ parameters:
   save_model:
     value: True
   model:
-    # value: TRAN.relative_universal
+    value: TRAN.relative_universal
     # values: [TRAN.relative, TRAN.opennmt]
-    values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+    # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal
     # values: [decimal, sin, binary]
@@ -29,8 +29,6 @@ parameters:
     value: 50
   dropout:
     value: 0.1
-  nhead:
-    value: 8
     # values: [4, 8]
   # layers:
     # value: 6
@@ -41,10 +39,15 @@ parameters:
   dec_layers:
     value: 1
     # values: [1, 3, 6]
+  nhead:
+    values: [4, 8, 12]
   hid_dim:
-    value: 512
-    # values: [128, 256, 512]
+    # value: 512
+    values: [128, 256, 512, 768, 1024]
+  emb_dim:
+    # value: 512
+    values: [128, 256, 512, 768, 1024]
   max_rel_pos:
     value: 15
-  seed:
-    values: [3,4]
+  # seed:
+  #   values: [3,4]
