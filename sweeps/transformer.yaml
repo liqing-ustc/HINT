@@ -1,4 +1,4 @@
-project: HINT_main_res_symbol
+project: HINT
 program: train.py
 method: grid
 metric:
