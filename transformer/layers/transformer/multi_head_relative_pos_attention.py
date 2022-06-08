@@ -102,8 +102,7 @@ class FixedRelativeMultiheadAttention(RelativeAttentionBase):
                                              need_weights=need_weights)
         
         if need_weights:
-            # Calculate the mean over the heads
-            return data, scores.mean(1)
+            return data, scores
         else:
             return data
 

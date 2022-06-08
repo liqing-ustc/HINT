@@ -34,4 +34,5 @@ def create_model(config) -> torch.nn.Module:
 						nhead=config.nhead,
 						dropout=config.dropout,
 						pos_emb_type=config.pos_emb_type,
+						output_attentions=config.output_attentions,
 						**args)

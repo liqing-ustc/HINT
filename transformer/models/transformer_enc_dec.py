@@ -15,7 +15,7 @@ class TransformerEncDecModel(torch.nn.Module):
                  pos_embeddig: Optional[Callable[[torch.Tensor, int], torch.Tensor]] = None, pos_emb_type='sin',
                  same_enc_dec_embedding: bool = False, embedding_init: str = "pytorch",
                  in_embedding_size: Optional[int] = None, out_embedding_size: Optional[int] = None, 
-                 scale_mode: str = "none", **kwargs):
+                 scale_mode: str = "none", output_attentions=False, **kwargs):
         '''
         Transformer encoder-decoder.
 
@@ -30,6 +30,7 @@ class TransformerEncDecModel(torch.nn.Module):
 
         assert (not same_enc_dec_embedding) or (n_input_tokens == n_out_tokens)
 
+        self.output_attentions = output_attentions
         self.tied_embedding = tied_embedding
 
         self.decoder_sos = decoder_sos
@@ -98,9 +99,12 @@ class TransformerEncDecModel(torch.nn.Module):
     def run_greedy(self, src: torch.Tensor, src_len: torch.Tensor, max_len: int):
         batch_size = src.shape[0]
         n_steps = src.shape[1]
+        output_attentions = self.output_attentions
 
         in_len_mask = self.generate_len_mask(n_steps, src_len)
-        memory = self.trafo.encoder(src, mask=in_len_mask)
+        memory = self.trafo.encoder(src, mask=in_len_mask, output_attentions=output_attentions)
+        if output_attentions:
+            memory, encoder_attentions = memory
 
         running = torch.ones([batch_size], dtype=torch.bool, device=src.device)
         out_len = torch.zeros_like(running, dtype=torch.long)
@@ -109,10 +113,15 @@ class TransformerEncDecModel(torch.nn.Module):
                                                                 device=src.device)), 0, 1)
 
         all_outputs = []
+        all_attentions = []
         state = self.trafo.decoder.create_state(src.shape[0], max_len, src.device)
 
         for i in range(max_len):
-            output = self.trafo.decoder.one_step_forward(state, next_tgt, memory, memory_key_padding_mask=in_len_mask)
+            output = self.trafo.decoder.one_step_forward(state, next_tgt, memory, memory_key_padding_mask=in_len_mask,
+                                    output_attentions=output_attentions)
+            if output_attentions:
+                output, attentions = output
+                all_attentions.append(attentions)
 
             output = self.output_map(output)
             all_outputs.append(output)
@@ -122,8 +131,30 @@ class TransformerEncDecModel(torch.nn.Module):
 
             out_len[running] = i + 1
             next_tgt = self.pos_embed(self.output_embed(out_token).unsqueeze(1), i+1, 1)
+        
+        if output_attentions:
+            n_dec_layers = len(all_attentions[0])
+            decoder_attentions = [[] for _ in range(n_dec_layers)]
+            cross_attentions = [[] for _ in range(n_dec_layers)]
+            for i in range(max_len):
+                for l in range(n_dec_layers):
+                    decoder_attentions[l].append(all_attentions[i][l][0])
+                    cross_attentions[l].append(all_attentions[i][l][1])
+            
+            cross_attentions = [torch.cat(x, axis=-2) for x in cross_attentions]
 
-        return torch.cat(all_outputs, 1)
+            def causal_attention(attention_list):
+                batch_size, nhead = attention_list[0].shape[:2]
+                attentions = torch.zeros((batch_size, nhead, max_len, max_len), 
+                                    dtype=attention_list[0].dtype, device=attention_list[0].device)
+                for i in range(max_len):
+                    attentions[:,:,i,:i+1] = attention_list[i][:,:,0]
+                return attentions
+            decoder_attentions = [causal_attention(x) for x in decoder_attentions]
+
+            return torch.cat(all_outputs, 1), (encoder_attentions, decoder_attentions, cross_attentions)
+        else:
+            return torch.cat(all_outputs, 1)
 
     def run_teacher_forcing(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor):
         target = self.output_embed(target)
@@ -142,7 +173,7 @@ class TransformerEncDecModel(torch.nn.Module):
         return src
 
     def forward(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor,
-                teacher_forcing_ratio: float = 1.0, max_len: Optional[int] = None):
+                teacher_forcing_ratio: float = 1.0, max_len: Optional[int] = None, output_attentions=False):
         '''
         Run transformer encoder-decoder on some input/output pair
 

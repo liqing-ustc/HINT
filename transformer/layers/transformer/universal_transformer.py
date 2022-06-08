@@ -12,9 +12,17 @@ class UniversalTransformerEncoder(torch.nn.Module):
         self.layers = [self.layer] * depth
 
     def forward(self, data: torch.Tensor, *args, **kwargs):
+        output_attentions = kwargs.get('output_attentions', False)
+        attentions = []
         for l in self.layers:
             data = l(data, *args, **kwargs)
-        return data
+            if output_attentions:
+                data, layer_attentions = data
+                attentions.append(layer_attentions)
+        if output_attentions:
+            return data, attentions
+        else:
+            return data
 
 
 class UniversalTransformerDecoder(TransformerDecoderBase):

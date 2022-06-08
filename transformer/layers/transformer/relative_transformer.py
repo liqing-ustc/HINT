@@ -25,14 +25,19 @@ class RelativeTransformerEncoderLayer(torch.nn.Module):
         self.activation = activation
         self.reset_parameters()
 
-    def forward(self, src: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-        src2 = self.self_attn(src, src, AttentionMask(mask, None))
+    def forward(self, src: torch.Tensor, mask: Optional[torch.Tensor] = None, output_attentions=False) -> torch.Tensor:
+        src2 = self.self_attn(src, src, AttentionMask(mask, None), need_weights=output_attentions)
+        if output_attentions:
+            src2, attentions = src2
         src = src + self.dropout1(src2)
         src = self.norm1(src)
         src2 = self.linear2(self.dropout(self.activation(self.linear1(src))))
         src = src + self.dropout2(src2)
         src = self.norm2(src)
-        return src
+        if output_attentions:
+            return src, attentions
+        else:
+            return src
 
     def reset_parameters(self):
         torch.nn.init.xavier_uniform_(self.linear1.weight, gain=torch.nn.init.calculate_gain('relu')
@@ -63,19 +68,26 @@ class RelativeTransformerDecoderLayer(torch.nn.Module):
 
     def forward(self, tgt: torch.Tensor, memory: torch.Tensor, tgt_mask: Optional[torch.Tensor] = None,
                 memory_key_padding_mask: Optional[torch.Tensor] = None,
-                full_target: Optional[torch.Tensor] = None, pos_offset: int = 0) -> torch.Tensor:
+                full_target: Optional[torch.Tensor] = None, pos_offset: int = 0, output_attentions=False) -> torch.Tensor:
         assert pos_offset == 0 or tgt_mask is None
         tgt2 = self.self_attn(tgt, tgt if full_target is None else full_target, mask=AttentionMask(None, tgt_mask),
-                              pos_offset=pos_offset)
+                              pos_offset=pos_offset, need_weights=output_attentions)
+        if output_attentions:
+            tgt2, attentions = tgt2
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
-        tgt2 = self.multihead_attn(tgt, memory, mask=AttentionMask(memory_key_padding_mask, None))
+        tgt2 = self.multihead_attn(tgt, memory, mask=AttentionMask(memory_key_padding_mask, None), need_weights=output_attentions)
+        if output_attentions:
+            tgt2, cross_attentions = tgt2
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))
         tgt = tgt + self.dropout3(tgt2)
         tgt = self.norm3(tgt)
-        return tgt
+        if output_attentions:
+            return tgt, (attentions, cross_attentions)
+        else:
+            return tgt
 
     def reset_parameters(self):
         torch.nn.init.xavier_uniform_(self.linear1.weight, gain=torch.nn.init.calculate_gain('relu')

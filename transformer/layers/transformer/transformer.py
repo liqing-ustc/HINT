@@ -25,14 +25,19 @@ class TransformerEncoderLayer(torch.nn.Module):
         self.activation = activation
         self.reset_parameters()
 
-    def forward(self, src: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-        src2 = self.self_attn(src, src, AttentionMask(mask, None))
+    def forward(self, src: torch.Tensor, mask: Optional[torch.Tensor] = None, output_attentions=False) -> torch.Tensor:
+        src2 = self.self_attn(src, src, AttentionMask(mask, None), need_weights=output_attentions)
+        if output_attentions:
+            src2, attentions = src2
         src = src + self.dropout1(src2)
         src = self.norm1(src)
         src2 = self.linear2(self.dropout(self.activation(self.linear1(src))))
         src = src + self.dropout2(src2)
         src = self.norm2(src)
-        return src
+        if output_attentions:
+            return src, attentions
+        else:
+            return src
 
     def reset_parameters(self):
         torch.nn.init.xavier_uniform_(self.linear1.weight, gain=torch.nn.init.calculate_gain('relu')
@@ -100,13 +105,20 @@ class TransformerDecoderBase(torch.nn.Module):
         assert data.shape[1] == 1, f"For one-step forward should have one timesteps, but shape is {data.shape}"
         assert state.step < state.state[0].shape[1]
 
+        output_attentions = kwargs.get('output_attentions', False)
+        attentions = []
         for i, l in enumerate(self.layers):
             state.state[i][:, state.step:state.step + 1] = data
             data = l(data, *args, **kwargs, full_target=state.state[i][:, :state.step + 1],
                      pos_offset=state.step)
-
+            if output_attentions:
+                data, layer_attentions = data
+                attentions.append(layer_attentions)
         state.step += 1
-        return data
+        if output_attentions:
+            return data, attentions
+        else:
+            return data
 
 
 class TransformerEncoder(torch.nn.Module):
@@ -115,9 +127,17 @@ class TransformerEncoder(torch.nn.Module):
         self.layers = torch.nn.ModuleList([layer(*args, **kwargs) for _ in range(n_layers)])
 
     def forward(self, data: torch.Tensor, *args, **kwargs):
+        output_attentions = kwargs.get('output_attentions', False)
+        attentions = []
         for l in self.layers:
             data = l(data, *args, **kwargs)
-        return data
+            if output_attentions:
+                data, layer_attentions = data
+                attentions.append(layer_attentions)
+        if output_attentions:
+            return data, attentions
+        else:
+            return data
 
 
 class TransformerDecoder(TransformerDecoderBase):
