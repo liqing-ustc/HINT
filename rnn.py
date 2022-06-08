@@ -229,7 +229,7 @@ class RNNModel(nn.Module):
         output = torch.stack(output_list)
         return output.transpose(0, 1)
 
-    def forward(self, src, src_len, tgt, teacher_forcing_ratio=0.5):
+    def forward(self, src, src_len, tgt, teacher_forcing_ratio=0.5, output_attentions=False):
         src = src.transpose(0, 1)
         tgt = tgt.transpose(0, 1)
         encoder_outputs, hidden = self.encode(src, src_len)

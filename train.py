@@ -54,6 +54,7 @@ def parse_args():
     parser.add_argument('--cos_sim_margin', type=float, default=0.2, 
                     help='the margin used to compute the loss for sin result encoding.')
     parser.add_argument('--max_rel_pos', type=int, default=15, help='the maximum relative position used in relative transformer.')
+    parser.add_argument('--output_attentions', action='store_true', help='output attentions for visualization of Transformer.')
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
