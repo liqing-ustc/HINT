@@ -40,13 +40,14 @@ parameters:
     value: 1
     # values: [1, 3, 6]
   nhead:
-    values: [4, 8]
+    value: 8
+    # values: [4, 8]
   hid_dim:
-    # value: 512
-    values: [128, 256, 512, 768, 1024]
+    value: 512
+    # values: [128, 256, 512, 768, 1024]
   emb_dim:
-    # value: 512
-    values: [128, 256, 512, 768, 1024]
+    value: 512
+    # values: [128, 256, 512, 768, 1024]
   max_rel_pos:
     value: 15
   # seed:

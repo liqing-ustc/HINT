@@ -172,9 +172,9 @@ class Transformer(torch.nn.Module):
                                      dropout, activation, **kwargs)
 
     def forward(self, src: torch.Tensor, tgt: torch.Tensor, tgt_mask: Optional[torch.Tensor] = None,
-                src_length_mask: Optional[torch.Tensor] = None):
+                src_length_mask: Optional[torch.Tensor] = None, dependency_mask=None):
 
-        memory = self.encoder(src, src_length_mask)
+        memory = self.encoder(src, src_length_mask, dependency_mask=dependency_mask)
         return self.decoder(tgt, memory, tgt_mask, src_length_mask)
 
     def generate_square_subsequent_mask(self, sz: int, device: torch.device) -> torch.Tensor:

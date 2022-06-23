@@ -10,6 +10,7 @@ from dataclasses import dataclass
 class AttentionMask:
     src_length_mask: Optional[torch.Tensor]
     position_mask: Optional[torch.Tensor]
+    dependency_mask: Optional[torch.Tensor] = None
 
 
 class MultiHeadAttentionBase(torch.nn.Module):
@@ -38,6 +39,9 @@ class MultiHeadAttentionBase(torch.nn.Module):
 
         if mask.src_length_mask is not None:
             logits = logits.masked_fill(mask.src_length_mask.unsqueeze(1).unsqueeze(1), float("-inf"))
+
+        if mask.dependency_mask is not None:
+            logits = logits.masked_fill(mask.dependency_mask.unsqueeze(1), float("-inf"))
 
         logits = F.softmax(logits, -1)
         return logits.view(bb, n_time_dest, n_time_src)

@@ -90,19 +90,34 @@ class TransformerEncDecModel(torch.nn.Module):
     def generate_len_mask(self, max_len: int, len: torch.Tensor) -> torch.Tensor:
         return self.int_seq[: max_len] >= len.unsqueeze(-1)
 
+    def generate_dep_mask(self, max_len, dep) -> torch.Tensor:
+        batch_size = len(dep)
+        mask = torch.ones(batch_size, max_len, max_len)
+        for i, heads in enumerate(dep):
+            for j, h in enumerate(heads):
+                j += 1 # we append SOS to the input seq
+                h += 1
+                mask[i][h, j] = 0
+                mask[i][j, j] = 0
+            for j in range(len(heads)+1, max_len):
+                mask[i][j, 0] = 0
+
+        mask = mask.to(torch.bool)
+        return mask
+
     def output_embed(self, x: torch.Tensor) -> torch.Tensor:
         o = self.output_embedding(x)
         if self.out_embedding_size is not None:
             o = self.out_embedding_upscale(o)
         return o
 
-    def run_greedy(self, src: torch.Tensor, src_len: torch.Tensor, max_len: int):
+    def run_greedy(self, src: torch.Tensor, src_len: torch.Tensor, max_len: int, dependency_mask=None):
         batch_size = src.shape[0]
         n_steps = src.shape[1]
         output_attentions = self.output_attentions
 
         in_len_mask = self.generate_len_mask(n_steps, src_len)
-        memory = self.trafo.encoder(src, mask=in_len_mask, output_attentions=output_attentions)
+        memory = self.trafo.encoder(src, mask=in_len_mask, output_attentions=output_attentions, dependency_mask=dependency_mask)
         if output_attentions:
             memory, encoder_attentions = memory
 
@@ -156,13 +171,13 @@ class TransformerEncDecModel(torch.nn.Module):
         else:
             return torch.cat(all_outputs, 1)
 
-    def run_teacher_forcing(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor):
+    def run_teacher_forcing(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor, dependency_mask=None):
         target = self.output_embed(target)
         target = self.pos_embed(target, 0, 1)
 
         in_len_mask = self.generate_len_mask(src.shape[1], src_len)
 
-        res = self.trafo(src, target, src_length_mask=in_len_mask,
+        res = self.trafo(src, target, src_length_mask=in_len_mask, dependency_mask=dependency_mask,
                           tgt_mask=self.trafo.generate_square_subsequent_mask(target.shape[1], src.device))
 
         return self.output_map(res)
@@ -173,7 +188,8 @@ class TransformerEncDecModel(torch.nn.Module):
         return src
 
     def forward(self, src: torch.Tensor, src_len: torch.Tensor, target: torch.Tensor,
-                teacher_forcing_ratio: float = 1.0, max_len: Optional[int] = None, output_attentions=False):
+                teacher_forcing_ratio: float = 1.0, max_len: Optional[int] = None, 
+                output_attentions=False, dependency=None):
         '''
         Run transformer encoder-decoder on some input/output pair
 
@@ -187,8 +203,9 @@ class TransformerEncDecModel(torch.nn.Module):
 
         src = self.pos_embed(self.input_embed(src), 0, 0)
         src_len = src_len.to(src.device)
+        dependency_mask = self.generate_dep_mask(src.shape[1], dependency).to(src.device)
         use_teacher_forcing = True if self.training and random.random() < teacher_forcing_ratio else False
         if use_teacher_forcing:
-            return self.run_teacher_forcing(src, src_len, target)
+            return self.run_teacher_forcing(src, src_len, target, dependency_mask)
         else:
-            return self.run_greedy(src, src_len, max_len or target.shape[1])
+            return self.run_greedy(src, src_len, max_len or target.shape[1], dependency_mask)

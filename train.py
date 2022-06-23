@@ -103,7 +103,7 @@ def evaluate(model, dataloader, args, log_prefix='val'):
             src = src.to(DEVICE)
             tgt = tgt.to(DEVICE)
 
-            output = model(src, tgt[:, :-1], src_len)
+            output = model(src, tgt[:, :-1], src_len, dep)
             pred = torch.argmax(output, -1).detach().cpu().numpy()
             if args.result_encoding == 'sin':
                 res_pred = pred
@@ -189,10 +189,11 @@ def train(model, args, st_iter=0):
         else:
             tgt = torch.tensor(args.res_enc.res2seq_batch(res.numpy()))
         src_len = sample['len']
+        dep = sample['head']
 
         src = src.to(DEVICE)
         tgt = tgt.to(DEVICE)
-        output = model(src, tgt[:, :-1], src_len)
+        output = model(src, tgt[:, :-1], src_len, dep)
         if args.result_encoding == 'sin':
             loss = criterion(output, tgt.flatten())
             # loss = -output.gather(1, tgt).mean()

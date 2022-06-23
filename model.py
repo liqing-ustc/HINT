@@ -75,9 +75,9 @@ class NeuralArithmetic(nn.Module):
         else:
             self.model = RNNModel(config)
     
-    def forward(self, src, tgt, src_len):
+    def forward(self, src, tgt, src_len, dependency=None):
         src, src_len = self.embedding_in(src, src_len)
-        output = self.model(src, src_len, tgt)
+        output = self.model(src, src_len, tgt, dependency=dependency)
         return output
 
 def make_model(config):

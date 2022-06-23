@@ -25,8 +25,8 @@ class RelativeTransformerEncoderLayer(torch.nn.Module):
         self.activation = activation
         self.reset_parameters()
 
-    def forward(self, src: torch.Tensor, mask: Optional[torch.Tensor] = None, output_attentions=False) -> torch.Tensor:
-        src2 = self.self_attn(src, src, AttentionMask(mask, None), need_weights=output_attentions)
+    def forward(self, src: torch.Tensor, mask: Optional[torch.Tensor] = None, output_attentions=False, dependency_mask=None) -> torch.Tensor:
+        src2 = self.self_attn(src, src, AttentionMask(mask, None, dependency_mask), need_weights=output_attentions)
         if output_attentions:
             src2, attentions = src2
         src = src + self.dropout1(src2)
