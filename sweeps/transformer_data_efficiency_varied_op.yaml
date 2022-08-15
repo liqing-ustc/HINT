@@ -1,4 +1,4 @@
-project: HINT
+project: HINT_rebuttall
 program: train.py
 method: grid
 metric:
