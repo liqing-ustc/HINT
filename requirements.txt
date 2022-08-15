@@ -3,3 +3,6 @@ torchvision==0.8.1
 tensorboard==2.4.1
 tqdm
 wandb
+pandas
+matplotlib
+seaborn
