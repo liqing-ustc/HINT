@@ -14,7 +14,10 @@
   gtag('config', 'UA-121802070-1');
 
 ;
-$(document).ready(function() {  
+$(document).ready(function() {
+	$('.show').click(function() {
+		$(".answer").toggle();
+	});
 	$.getJSON( "rebuttal/data.json", function(data) {
 		$.each(data['train'], function(key, val) {
 			$(".left").append(
@@ -163,6 +166,25 @@ a.myclass {
 .right {
 	width: 50%;
 }
+
+.banner {
+	width: 40%;
+}
+
+.answer {
+	width: 100%;
+	display: none;
+}
+
+.answer img {
+	width: 30%;
+	margin: auto;
+}
+
+.center {
+	text-align: center;
+}
+
 </style>
 <!-- 
 <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-text="Closed Loop Neural-Symbolic Learning via Integrating Neural Perception, Grammar Parsing, and Symbolic Reasoning" data-show-count="false">Tweet</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
@@ -174,13 +196,20 @@ a.myclass {
       <center>
         <table width="1100" height="80" border="0">
       	<tr>
+		<!-- <img class="banner" src="file/banner.jpg"> -->
 		<td halign="center">
 			<p class=un>HINT using new images, syntax, and semantics</p>
-			<hr >
+			<hr>
 		</td>
 		</tr>
         </table>
       </center>
+	  <div class="center">
+	  	<button class="show">Show Answer</button>
+	  	<div class="answer">
+			<img src="rebuttal/ground_truth.png">
+	  	</div>
+	  </div>
     </div>
 </div>
 
