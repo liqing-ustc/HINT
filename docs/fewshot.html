@@ -41,7 +41,7 @@ $(document).ready(function() {
 				).append(
 					$('<br>')			
 				).append(
-					$('<span>').html('<b>A: </b>' + val[1])	
+					$('<span>').html('<b>A: </b>?')	
 				)
 			);
 		});
@@ -172,8 +172,9 @@ a.myclass {
 }
 
 .answer {
-	width: 100%;
-	display: none;
+	width: 70%;
+	margin: 0 auto;
+	/* display: none; */
 }
 
 .answer img {
@@ -192,7 +193,7 @@ a.myclass {
 
 
 <div id="Banner">
-    <div height="80" id="header" style="background-color:#FFFFFF; color: #FFFFFF">
+    <div height="80" id="header" style="background-color:#FFFFFF;">
       <center>
         <table width="1100" height="80" border="0">
       	<tr>
@@ -204,6 +205,19 @@ a.myclass {
 		</tr>
         </table>
       </center>
+	  <div class="center">
+	  	<button class="show">Intruction</button>
+	  	<div class="answer">
+			<p>
+				This is a human study to test if we can quickly learn a concept from a few examples.
+				These examples are from the arithmetic domain. There are 16 known concepts, i.e., 1~9, +-x/, ().
+				Note that wo modify the definitions of minus ("x - y = max(x-y, 0)") and division ("x / y = ceil(x/y)") to avoid negative or decimal results, e.g., <b>"1 - 2 = 0", "2 - 5 = 0", "4 / 7 = 1", " 14 / 3 = 5" </b> .
+				There are six new concepts ("xyabcd") and each of them represents a number or an operator.
+				There are 10 training examples for each concept. From the training examples, we need to figure out the perception, syntax, and semantics of these new concepts.
+				After you make sure you have mastered these new concepts, please answer the test questions.
+			</p>
+	  	</div>
+	  </div>
     </div>
 </div>
 
