@@ -211,10 +211,14 @@ a.myclass {
 			<p>
 				This is a human study to test if we can quickly learn new arithmetic concepts from a few examples.
 				There are 16 known concepts, i.e., <b>0~9, +-*/, ()</b>.
-				Note that wo modify the definitions of minus ("<b>x - y = max(x-y, 0)</b>") and division ("<b>x / y = ceil(x/y)</b>") to avoid negative or decimal results, e.g., <b>"1 - 2 = 0", "2 - 5 = 0", "4 / 7 = 1", " 14 / 3 = 5" </b> . <br>
+				Note that wo modify the definitions of minus and division to avoid negative or decimal results: <br>
+				<b>
+					x - y = max(x-y, 0), e.g., 1 - 2 = 0, 2 - 5 = 0 <br>
+					x / y = ceil(x/y), e.g., 4 / 7 = 1, 14 / 3 = 5 <br>
+				</b>
 				There are six new concepts ("xyabcd") and each of them represents a number or an operator.
-				From the training examples on the left, we need to figure out the perception, syntax, and semantics of these new concepts.
-				After you make sure you have mastered these new concepts (they should explain all training examples), please answer the test questions on the right. It probably takes half an hour to finish the experiment.
+				From the training examples on the left, we need to figure out the perception, syntax (if the concept is an operator, what is its precedence?), and semantics of these new concepts.
+				After you make sure you have mastered these new concepts (they should explain all training examples), please answer the test questions on the right. It probably takes half an hour to finish the experiment. You are free to use a calculator if necessary.
 			</p>
 	  	</div>
 	  </div>
