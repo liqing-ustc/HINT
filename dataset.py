@@ -1,5 +1,5 @@
 from utils import SYM2ID, ROOT_DIR, IMG_DIR, NULL, IMG_TRANSFORM, pad_image, IMG_SIZE, render_img
-from utils import OPERATORS, FEWSHOT_OPERATORS
+from utils import OPERATORS, FEWSHOT_OPERATORS, PARENTHESES
 from copy import deepcopy
 import random
 import json
@@ -13,6 +13,33 @@ from torchvision import transforms
 op_list =  OPERATORS + FEWSHOT_OPERATORS
 def expr2n_op(expr):
     return len([1 for x in expr if x in op_list])
+
+def traversal_post(expr, head):
+    pass
+
+class Node:
+    def __init__(self, symbol):
+        self.symbol = symbol
+        self.children = []
+    
+    def post_order(self):
+        output = []
+        for ch in self.children:
+            output += ch.post_order()
+        if self.symbol not in PARENTHESES:
+            output.append(self.symbol)
+        return output
+
+def traversal_post(expr, head):
+    nodes = [Node(s) for s in expr]
+
+    for node, h in zip(nodes, head):
+        if h == -1:
+            root_node = node
+            continue
+        nodes[h].children.append(node)
+
+    return root_node.post_order() 
 
 class HINT(Dataset):
     def __init__(self, split, input, fewshot=None, n_sample=None, max_op=None, main_dataset_ratio=0.):
@@ -46,6 +73,9 @@ class HINT(Dataset):
 
         for x in dataset:
             x['len'] = len(x['expr'])
+
+        for x in dataset:
+            x['expr_post'] = traversal_post(x['expr'], x['head'])
         
         self.dataset = dataset
         self.img_transform = IMG_TRANSFORM
