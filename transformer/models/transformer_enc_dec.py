@@ -99,6 +99,7 @@ class TransformerEncDecModel(torch.nn.Module):
                 h += 1
                 mask[i][h, j] = 0
                 mask[i][j, j] = 0
+            mask[i][0, 0] = 0
             for j in range(len(heads)+1, max_len):
                 mask[i][j, 0] = 0
 
@@ -177,10 +178,14 @@ class TransformerEncDecModel(torch.nn.Module):
 
         in_len_mask = self.generate_len_mask(src.shape[1], src_len)
 
-        res = self.trafo(src, target, src_length_mask=in_len_mask, dependency_mask=dependency_mask,
+        res = self.trafo(src, target, src_length_mask=in_len_mask, dependency_mask=dependency_mask, output_attentions=self.output_attentions,
                           tgt_mask=self.trafo.generate_square_subsequent_mask(target.shape[1], src.device))
-
-        return self.output_map(res)
+        
+        if self.output_attentions:
+            res, attentions = res 
+            return self.output_map(res), attentions
+        else:
+            return self.output_map(res)
 
     def input_embed(self, src: torch.Tensor) -> torch.Tensor:
         if self.in_embedding_size is not None:
@@ -203,7 +208,7 @@ class TransformerEncDecModel(torch.nn.Module):
 
         src = self.pos_embed(self.input_embed(src), 0, 0)
         src_len = src_len.to(src.device)
-        dependency_mask = self.generate_dep_mask(src.shape[1], dependency).to(src.device)
+        dependency_mask = self.generate_dep_mask(src.shape[1], dependency).to(src.device) if dependency else None
         use_teacher_forcing = True if self.training and random.random() < teacher_forcing_ratio else False
         if use_teacher_forcing:
             return self.run_teacher_forcing(src, src_len, target, dependency_mask)

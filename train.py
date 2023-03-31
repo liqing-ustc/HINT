@@ -21,6 +21,13 @@ from optimization import AdamW, WarmupLinearSchedule, ConstantLRSchedule
 from utils import *
 from result_encoding import ResultEncoding
 
+def DAGness(w):
+    d = w.shape[0]
+    w = w * torch.ones_like(w).fill_diagonal_(0) # set diagonal to zero
+    E = torch.linalg.matrix_exp(w)
+    h = torch.trace(E) - d
+    return h
+
 def parse_args():
     parser = argparse.ArgumentParser('Give Me A HINT')
     parser.add_argument('--wandb', type=str, default='HINT', help='the project name for wandb.')
@@ -51,10 +58,14 @@ def parse_args():
     parser.add_argument('--pos_emb_type', default='sin', choices=['sin', 'learn'])
     parser.add_argument('--save_model', default='False', choices=['True', 'False'])
     parser.add_argument('--result_encoding', default='decimal', choices=['decimal', 'binary', 'sin'])
-    parser.add_argument('--cos_sim_margin', type=float, default=0.2, 
-                    help='the margin used to compute the loss for sin result encoding.')
+    parser.add_argument('--cos_sim_margin', type=float, default=0.2, help='the margin used to compute the loss for sin result encoding.')
     parser.add_argument('--max_rel_pos', type=int, default=15, help='the maximum relative position used in relative transformer.')
-    parser.add_argument('--output_attentions', action='store_true', help='output attentions for visualization of Transformer.')
+    parser.add_argument('--output_attentions', default='False', choices=['True', 'False'], 
+            help='output attentions for visualization of Transformer.')
+    parser.add_argument('--attention_regularizer', default='none', choices=['none', 'mask', 'mask_loss', 'dag_loss'], 
+            help='the method to regularize the encoder attention in Transformer')
+    parser.add_argument('--mask_loss_weight', type=float, default=0.01, help='valid when attention regularizer is mask loss.')
+    parser.add_argument('--dag_loss_weight', type=float, default=0.01, help='valid when attention regularizer is dag loss.')
 
     parser.add_argument('--batch_size', type=int, default=128, help='batch size for training')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
@@ -70,6 +81,7 @@ def parse_args():
     args.enc_layers = args.enc_layers or args.layers
     args.dec_layers = args.dec_layers or args.layers
     args.save_model = args.save_model == 'True'
+    args.output_attentions = args.output_attentions == 'True'
     return args
 
 def evaluate(model, dataloader, args, log_prefix='val'):
@@ -103,7 +115,9 @@ def evaluate(model, dataloader, args, log_prefix='val'):
             src = src.to(DEVICE)
             tgt = tgt.to(DEVICE)
 
-            output = model(src, tgt[:, :-1], src_len, dep)
+            output = model(src, tgt[:, :-1], src_len, dep if args.attention_regularizer == 'mask' else None)
+            if args.output_attentions:
+                output, attentions = output
             pred = torch.argmax(output, -1).detach().cpu().numpy()
             if args.result_encoding == 'sin':
                 res_pred = pred
@@ -193,12 +207,32 @@ def train(model, args, st_iter=0):
 
         src = src.to(DEVICE)
         tgt = tgt.to(DEVICE)
-        output = model(src, tgt[:, :-1], src_len, dep)
+        output = model(src, tgt[:, :-1], src_len, dep if args.attention_regularizer == 'mask' else None)
+        if args.output_attentions:
+            output, attentions = output
+
         if args.result_encoding == 'sin':
             loss = criterion(output, tgt.flatten())
             # loss = -output.gather(1, tgt).mean()
         else:
             loss = criterion(output.contiguous().view(-1, output.shape[-1]), tgt[:, 1:].contiguous().view(-1))
+
+        if 'loss' in args.attention_regularizer:
+            encoder_attentions, decoder_attentions, cross_attentions = attentions
+            encoder_attentions = torch.stack(encoder_attentions, dim=1).mean(dim=(1,2))
+            dependency_mask = model.model.generate_dep_mask(encoder_attentions.shape[-1], dep)
+            mask_loss = encoder_attentions[dependency_mask].sum() / encoder_attentions.shape[0]
+            wandb.log({'train/mask_loss': mask_loss.cpu().item(),
+                    'train/task_loss': loss.cpu().item()}, step=step)
+            if args.attention_regularizer == 'mask_loss':
+                loss += mask_loss * args.mask_loss_weight
+            elif args.attention_regularizer == 'dag_loss':
+                h = [DAGness(w[1:1+l, 1:1+l]) for l, w in zip(src_len, encoder_attentions)]
+                h = torch.stack(h)
+                dag_loss = 0.5 * (h * h).mean()
+                loss += dag_loss * args.dag_loss_weight
+                wandb.log({'train/dag_loss': dag_loss.cpu().item(),
+                    'train/dagness': h.mean().cpu().item()}, step=step)
 
         optimizer.zero_grad()
         loss.backward()
@@ -216,7 +250,7 @@ def train(model, args, st_iter=0):
         acc = acc.float().mean()
 
         wandb.log({'train/step': step, 'train/loss': loss.cpu().item(), 
-                'train/result_acc': acc.cpu().item(), 'train/lr': lr_scheduler.get_last_lr()[0]})
+                'train/result_acc': acc.cpu().item(), 'train/lr': lr_scheduler.get_last_lr()[0]}, step=step)
             
         if ((step+1) % args.iterations_eval == 0) or (step+1 == args.iterations):
             perception_acc, head_acc, result_acc = evaluate(model, eval_dataloader, args)

@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import math
 from typing import Optional, Callable, List, Union, Tuple
 from dataclasses import dataclass
-from torch_struct import DependencyCRF
 
 @dataclass
 class AttentionMask:
@@ -41,16 +40,17 @@ class MultiHeadAttentionBase(torch.nn.Module):
             logits = logits.masked_fill(mask.src_length_mask.unsqueeze(1).unsqueeze(1), float("-inf"))
 
         if mask.dependency_mask is not None:
-            # logits = logits.masked_fill(mask.dependency_mask.unsqueeze(1), float("-inf"))
-            logits = logits.view(bb, n_time_dest, n_time_src)
-            dep_logits = logits[:, 1:, 1:] # first token is SOS as root
-            dep_logits.diagonal(dim1=-2, dim2=-1).copy_(logits[:,0, 1:])
-            lengths = n_time_src - mask.src_length_mask.sum(1) - 1
-            lengths = lengths.repeat_interleave(self.n_heads)
-            dep_crf = DependencyCRF(dep_logits, lengths, multiroot=False)
-            dep_marginals = dep_crf.marginals
-            dep_marginals = torch.cat([dep_marginals.diagonal(dim1=-2, dim2=-1).unsqueeze(1), dep_marginals], axis=1)
-            dep_marginals = torch.cat([torch.zeros_like(dep_marginals[:, :, :1]), dep_marginals], axis=2)
+            logits = logits.masked_fill(mask.dependency_mask.unsqueeze(1), float("-inf"))
+            # from torch_struct import DependencyCRF
+            # logits = logits.view(bb, n_time_dest, n_time_src)
+            # dep_logits = logits[:, 1:, 1:] # first token is SOS as root
+            # dep_logits.diagonal(dim1=-2, dim2=-1).copy_(logits[:,0, 1:])
+            # lengths = n_time_src - mask.src_length_mask.sum(1) - 1
+            # lengths = lengths.repeat_interleave(self.n_heads)
+            # dep_crf = DependencyCRF(dep_logits, lengths, multiroot=False)
+            # dep_marginals = dep_crf.marginals
+            # dep_marginals = torch.cat([dep_marginals.diagonal(dim1=-2, dim2=-1).unsqueeze(1), dep_marginals], axis=1)
+            # dep_marginals = torch.cat([torch.zeros_like(dep_marginals[:, :, :1]), dep_marginals], axis=2)
 
 
         logits = F.softmax(logits, -1)

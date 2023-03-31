@@ -8,8 +8,8 @@ parameters:
   input:
     value: symbol
   model:
-    # value: TRAN.relative_universal
-    values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
+    value: TRAN.relative_universal
+    # values: [TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
     # values: [LSTM, GRU, LSTM_attn, GRU_attn, TRAN.relative_universal, TRAN.relative, TRAN.opennmt]
   result_encoding:
     value: decimal

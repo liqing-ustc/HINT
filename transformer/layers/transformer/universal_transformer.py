@@ -32,9 +32,19 @@ class UniversalTransformerDecoder(TransformerDecoderBase):
         self.layers = [self.layer] * depth
 
     def forward(self, data: torch.Tensor, *args, **kwargs):
+        output_attentions = kwargs.get('output_attentions', False)
+        decoder_attentions = []
+        cross_attentions = []
         for l in self.layers:
             data = l(data, *args, **kwargs)
-        return data
+            if output_attentions:
+                data, (decoder_layer_attentions, cross_layer_attentions) = data
+                decoder_attentions.append(decoder_layer_attentions)
+                cross_attentions.append(cross_layer_attentions)
+        if output_attentions:
+            return data, decoder_attentions, cross_attentions
+        else:
+            return data
 
 
 def UniversalTransformerEncoderWithLayer(layer=TransformerEncoderLayer):
